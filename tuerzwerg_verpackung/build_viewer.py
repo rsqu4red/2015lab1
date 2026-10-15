@@ -43,6 +43,8 @@ def section_svg(m):
     pts = [(0.3, ZD), (0.3, ZR - t / 2), (Y1, ZR - t / 2), (Y1, ZS - t / 2), (Y2, ZS - t / 2), (Y2, ZC - t / 2), (H, ZC - t / 2), (H, ZD)]
     o.append('<path class="ins" d="M' + " L".join(f"{X(y):.1f},{Y(z):.1f}" for y, z in pts) + '"/>')
     o.append(f'<path class="ins deck" d="M{X(0.3):.1f},{Y(ZD):.1f} L{X(H):.1f},{Y(ZD):.1f}"/>')
+    zf = Di - 0.2   # Seitenflansch (liegt am Rand, hier als Kontur dahinter)
+    o.append(f'<path class="flange" d="M{X(1):.1f},{Y(ZD):.1f} L{X(3):.1f},{Y(zf):.1f} L{X(H - 3):.1f},{Y(zf):.1f} L{X(H - 1):.1f},{Y(ZD):.1f}"/>')
     for yy in (Yr - 21, Yr + 21):   # Füße
         o.append(f'<path class="ins" d="M{X(yy):.1f},{Y(ZR - t):.1f} L{X(yy):.1f},{Y(0):.1f}"/>')
     for y0, y1 in ((m["ring_bottom"], m["ring_bottom"] + 11.5), (Yr + 36 - 11.5, Yr + 36)):
@@ -63,6 +65,7 @@ def section_svg(m):
     lab(X(Yc), Y(0) + 16, "Manschettenboden")
     lab(X(ym), Y(0) + 30, "Kreuzschlitz", cls="lab small")
     lab(X(Hi) - 4, Y(ZD) - 3, "Deck", anchor="end", cls="lab small")
+    lab(X(ym - 4), Y(Di) - 8, "Seitenflansche bis an die Front", cls="lab small")
     lab(X(Hi) - 4, Y(zc) + 10, f"Mitte {de(zc, 2)} mm", anchor="end", cls="lab small")
     lab(X(0), Y(0) + 44, "unten", anchor="start", cls="lab small")
     lab(X(Hi), Y(0) + 44, "oben (Hänger)", anchor="end", cls="lab small")
@@ -101,15 +104,20 @@ HOW = {
 <p>Die Fenstergruppe sitzt senkrecht mittig: Von der Oberkante des Manschettenfensters bis zur Kartonoberkante sind es 10,3 mm, genauso viel wie von der Unterkante des Ringfensters bis zur Kartonunterkante. Seitlich bleiben neben dem Ringfenster je 11,8 mm.</p></div>
 <div class="note"><h3>Schnur</h3>
 <p>Im 20-mm-Sichtfeld liegt die Schnur gerade auf Höhe der Bohrungen über einem Schnurboden. Mittig darin ist ein Kreuzschlitz, durch den die Restschnur von rund 28 cm als Schlaufe ins Fach darunter geschoben wird. Das Fach misst 95 × 16 × 8,5 mm und läuft unter dem Ringboden flach weiter.</p>
-<p>Einleger: ein Streifen mit 8 Querfalzen, Seitenflanschen und 4 Füßen, 123 × 335 mm, braucht die 12×24″-Matte.</p></div>""",
+</div>
+<div class="note"><h3>Einleger fest im Karton</h3>
+<p>Nach hinten liegt der Einleger mit dem Manschettenboden und den vier Füßen unter dem Ringboden auf der Rückwand. Nach vorn klappen die beiden Seitenflansche des Decks über die ganze Länge bis an die Front (8,4 mm hoch, 0,2 mm Luft). Seitlich füllt er die Kartonbreite aus, oben und unten Boden und Deckel. Er kann sich in keine Richtung mehr bewegen.</p>
+<p>Die Flansche machen das Deck außerdem zu einem steifen U-Profil. Sie laufen hinter dem Fensterrand und sind von vorn nicht zu sehen.</p>
+<p>Einleger: ein Streifen mit 8 Querfalzen, 2 Seitenflanschen und 4 Füßen, braucht die 12×24″-Matte.</p></div>""",
 }
 
 STEPS = {
-    "C": """<li><b>Ring eindrücken.</b> Einleger flach hinlegen, Ring mit Bohrung nach oben ins runde Loch drücken, bis er einrastet.</li>
+    "C": """<li><b>Karton vorbereiten.</b> Einmalig beim Falten den Boden schließen (Staublaschen, Bodendeckel einstecken). Befüllt wird nur von oben.</li>
+<li><b>Ring eindrücken.</b> Einleger flach hinlegen, Ring mit Bohrung nach oben ins runde Loch drücken, bis er einrastet.</li>
 <li><b>Manschette eindrücken.</b> Mit Kiel zum Ring ins obere Loch drücken, bis sie einrastet.</li>
 <li><b>Schnur verstauen.</b> Mitte der Schnur als Schlaufe durch den Kreuzschlitz ins Schnurfach schieben, bis beide Stücke gerade liegen.</li>
-<li><b>Einschieben.</b> Karton mit der Front nach oben halten, Einleger von unten einschieben.</li>
-<li><b>Schließen.</b> Staublaschen einklappen, Bodendeckel einstecken. Hänger für den Versand nach vorn auf den Deckel klappen.</li>""",
+<li><b>Einschieben.</b> Oberen Deckel öffnen, Einleger von oben einschieben, bis er unten aufsitzt. Die Seitenflansche gleiten an der Front entlang.</li>
+<li><b>Schließen.</b> Staublaschen einklappen, Deckel einstecken. Hänger für den Versand nach vorn auf den Deckel klappen.</li>""",
 }
 
 
@@ -124,7 +132,7 @@ def variant_blocks(v, m):
         steps=f'<ol class="steps" data-v="{v}"{hidden}>{STEPS[v]}</ol>',
         blanks=f'''<div class="blanks" data-v="{v}"{hidden}>
 <figure><div class="paper">{svg_inline(v, "Umverpackung")}</div><figcaption>Umverpackung, {bw:.0f} × {bh:.0f} mm, 12×12″-Matte. Links oben: Hänger mit Doppelung, die Doppelung wird innen (zur Front hin) verklebt.</figcaption></figure>
-<figure><div class="paper">{svg_inline(v, "Einleger")}</div><figcaption>Einleger, {iw:.0f} × {ih:.0f} mm, 12×24″-Matte. Von links: Deck mit Seitenflanschen, Wand unten, Ringboden mit 4 Füßen, Stufe, Schnurboden mit Kreuzschlitz, Stufe, Manschettenboden, Klebelasche. Oben: Wand oben.</figcaption></figure></div>''',
+<figure><div class="paper">{svg_inline(v, "Einleger")}</div><figcaption>Einleger, {iw:.0f} × {ih:.0f} mm, 12×24″-Matte. Von links: Deck mit Seitenflanschen (klappen nach vorn), Wand unten, Ringboden mit 4 Füßen, Stufe, Schnurboden mit Kreuzschlitz, Stufe, Manschettenboden, Klebelasche. Oben: Wand oben.</figcaption></figure></div>''',
     )
 
 
@@ -137,7 +145,8 @@ def main():
     for key in ("dl", "sect", "how", "steps", "blanks"):
         html = html.replace(f"%%{key.upper()}%%", "".join(blocks[v][key] for v in VARIANTS))
     html = (html.replace("%%GLBS%%", json.dumps(glbs)).replace("%%THREE%%", THREE)
-            .replace("%%HINGE_Y%%", f"{pr['Hi'] + pr['t']:.3f}").replace("%%HINGE_Z%%", f"{-pr['t']:.3f}"))
+            .replace("%%HINGE_Y%%", f"{pr['Hi'] + pr['t']:.3f}").replace("%%HINGE_Z%%", f"{-pr['t']:.3f}")
+            .replace("%%LID_Y%%", f"{pr['Hi'] + pr['t'] / 2:.3f}").replace("%%LID_Z%%", f"{pr['Di'] + pr['t']:.3f}"))
     with open(os.path.join(OUT, "viewer.html"), "w") as f:
         f.write(html)
     print("viewer.html", len(html) // 1024, "kB")
@@ -198,6 +207,7 @@ dd{margin:0;text-align:right;font-family:var(--f-mono);font-size:13px;font-varia
 .sect .box{fill:none;stroke:var(--fg);stroke-width:1.6}
 .sect .ins{fill:none;stroke:var(--kraft);stroke-width:1.8;stroke-linejoin:round}
 .sect .deck{stroke-dasharray:5 3}
+.sect .flange{fill:none;stroke:var(--kraft);stroke-width:1;stroke-dasharray:1.5 2.5}
 .sect .part{fill:var(--part);stroke:none;opacity:.9}
 .sect .hollow{fill:var(--panel)}
 .sect .axis{fill:none;stroke:var(--muted);stroke-width:.8;stroke-dasharray:2 3}
@@ -246,7 +256,7 @@ th{font-weight:600;color:var(--muted)}
         <button id="v-iso" aria-pressed="false">Schräg</button>
         <button id="v-side" aria-pressed="false">Seite</button>
       </div>
-      <label for="slide"><span>Einleger einschieben <b id="slideVal" class="mono">0 mm</b></span>
+      <label for="slide"><span>Einleger von oben einschieben <b id="slideVal" class="mono">0 mm</b></span>
         <input id="slide" type="range" min="0" max="160" value="0" step="1"></label>
       <label for="hang"><span>Hänger klappen <b id="hangVal" class="mono">aufgestellt</b></span>
         <input id="hang" type="range" min="0" max="90" value="0" step="5"></label>
@@ -264,7 +274,7 @@ th{font-weight:600;color:var(--muted)}
 <section aria-labelledby="h-sect">
   <h2 id="h-sect">Längsschnitt</h2>
   %%SECT%%
-  <p style="color:var(--muted);font-size:13px;margin:8px 0 0">Maßstäblich, Schnitt durch die Kartonmitte, Karton liegend. Braun = Einleger, gestrichelt = Deck (in der Mitte liegen die Löcher).</p>
+  <p style="color:var(--muted);font-size:13px;margin:8px 0 0">Maßstäblich, Schnitt durch die Kartonmitte, Karton liegend. Braun = Einleger, gestrichelt = Deck (in der Mitte liegen die Löcher), gepunktet = Seitenflansche am Rand, sie halten den Einleger an der Front.</p>
 </section>
 
 <section aria-labelledby="h-how">
@@ -345,15 +355,16 @@ th{font-weight:600;color:var(--muted)}
   const fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-200, -60, 120); scene.add(fill);
 
   const clip = new THREE.Plane(new THREE.Vector3(-1,0,0), 0);
-  let groupBox, groupIns, hinge, tongue, mats;
-  const COL = {Umverpackung:0xf6f4ee, Aufhaenger:0xf6f4ee, Zunge:0xf6f4ee, Einleger:0xc9a473, Ring:0xd4ff1c, Manschette:0xd4ff1c, Schnur:0x8c1f19};
+  let groupBox, groupIns, hinge, lid, tongue, mats;
+  const COL = {Umverpackung:0xf6f4ee, Aufhaenger:0xf6f4ee, Deckel:0xf6f4ee, Einleger:0xc9a473, Ring:0xd4ff1c, Manschette:0xd4ff1c, Schnur:0x8c1f19};
   const target = new THREE.Vector3(0, 85, 12);
 
   window.loadModel = function(v){
-    [groupBox, groupIns, hinge].forEach(g => { if (g) { scene.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } });
-    groupBox = new THREE.Group(); groupIns = new THREE.Group(); hinge = new THREE.Group();
+    [groupBox, groupIns, hinge, lid].forEach(g => { if (g) { scene.remove(g); g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } });
+    groupBox = new THREE.Group(); groupIns = new THREE.Group(); hinge = new THREE.Group(); lid = new THREE.Group();
     hinge.position.set(0, %%HINGE_Y%%, %%HINGE_Z%%);
-    scene.add(groupBox, groupIns, hinge);
+    lid.position.set(0, %%LID_Y%%, %%LID_Z%%);
+    scene.add(groupBox, groupIns, hinge, lid);
     tongue = null; mats = {};
     const bin = Uint8Array.from(atob(GLBS[v]), c => c.charCodeAt(0)).buffer;
     new THREE.GLTFLoader().parse(bin, '', gltf => {
@@ -378,6 +389,7 @@ th{font-weight:600;color:var(--muted)}
         mats[key].push(edges.material);
         mesh.add(edges);
         if (key === 'Aufhaenger') { mesh.position.sub(hinge.position); hinge.add(mesh); }
+        else if (key === 'Deckel') { mesh.position.sub(lid.position); lid.add(mesh); }
         else if (key === 'Umverpackung' || key === 'Zunge') { groupBox.add(mesh); if (key === 'Zunge') tongue = mesh; }
         else groupIns.add(mesh);
       });
@@ -396,7 +408,9 @@ th{font-weight:600;color:var(--muted)}
         cut = document.getElementById('cut'), hang = document.getElementById('hang');
   function apply(){
     if (!groupIns) return;
-    groupIns.position.y = -Number(slide.value);
+    groupIns.position.y = Number(slide.value);
+    if (lid) lid.rotation.x = Math.min(Number(slide.value) / 25, 1) * 1.95;   // Deckel öffnet nach vorn
+    if (Number(slide.value) > 0 && Number(hang.value) > 0) { hang.value = 0; }
     document.getElementById('slideVal').textContent = slide.value + ' mm';
     const deg = Number(hang.value);
     hinge.rotation.x = deg * Math.PI / 180;
@@ -404,7 +418,7 @@ th{font-weight:600;color:var(--muted)}
     document.getElementById('hangVal').textContent = deg === 0 ? 'aufgestellt' : (deg === 90 ? 'Versand (auf dem Deckel)' : deg + '°');
     const a = Number(alpha.value)/100;
     document.getElementById('alphaVal').textContent = alpha.value + ' %';
-    ['Umverpackung','Aufhaenger','Zunge'].forEach(k => (mats[k]||[]).forEach(m => { m.opacity = m.isLineBasicMaterial ? 0.55*Math.max(a,0.25) : a; m.depthWrite = a > 0.98; }));
+    ['Umverpackung','Aufhaenger','Deckel'].forEach(k => (mats[k]||[]).forEach(m => { m.opacity = m.isLineBasicMaterial ? 0.55*Math.max(a,0.25) : a; m.depthWrite = a > 0.98; }));
     Object.values(mats).flat().forEach(m => { m.clippingPlanes = cut.checked ? [clip] : []; m.needsUpdate = true; });
   }
   [slide, alpha, hang].forEach(el => el.addEventListener('input', apply));

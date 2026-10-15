@@ -2,7 +2,8 @@
 
 Faltschachtel (außen 97 × 146 × 24,5 mm) mit Euroloch-Hänger über die volle Breite,
 der zum Versand 90° nach vorn auf den Deckel klappt, und einem Einleger, in dem
-Ringmitte und Manschettenachse auf gleicher Höhe liegen.
+Ringmitte und Manschettenachse auf gleicher Höhe liegen. Der Einleger wird von oben
+eingeschoben und sitzt nach hinten und vorn fest.
 
 ## Dateien (`out/`)
 
@@ -16,7 +17,7 @@ Ringmitte und Manschettenachse auf gleicher Höhe liegen.
 | `masse.json` | alle berechneten Maße |
 
 Die Zuschnitte zeigen die Außenseite (Druckseite).
-Umverpackung: 254 × 232 mm → 12×12″-Matte. Einleger: 123 × 335 mm → 12×24″-Matte.
+Umverpackung: 254 × 232 mm → 12×12″-Matte. Einleger: 112 × 335 mm → 12×24″-Matte.
 
 ## Kartonmaße und Versandkarton
 
@@ -35,7 +36,7 @@ Die Maße sind auf Standard-Versandkartons abgestimmt (Hänger umgeklappt, Höhe
 
 ## Einleger
 
-Ein Streifen, alle Falze quer: Wand oben · Deck (mit Seitenflanschen) · Wand unten ·
+Ein Streifen, alle Falze quer: Wand oben · Deck (mit 2 Seitenflanschen) · Wand unten ·
 Ringboden (4 Füße) · Stufe · Schnurboden · Stufe · Manschettenboden · Klebelasche.
 
 - Ringmitte und Manschettenachse liegen beide 11,95 mm über der Rückwand.
@@ -43,6 +44,9 @@ Ringboden (4 Füße) · Stufe · Schnurboden · Stufe · Manschettenboden · Kle
 - Manschette auf dem Boden an der Rückwand, 0,15 mm hinter der Front.
   Ring auf dem Ringboden (4,95 mm, auf Füßen), 4,65 mm hinter der Front.
 - Deck auf 14,7 mm: Ring und Manschette rasten ein (Löcher 0,35 mm kleiner, Haltezungen).
+- Fest im Karton: nach hinten über Manschettenboden und Füße auf der Rückwand, nach vorn
+  über die beiden Seitenflansche des Decks (klappen nach vorn, 8,4 mm, bis an die Front).
+- Befüllen: Boden einmal beim Falten schließen, Einleger von oben einschieben, Deckel zu.
 - Schnurboden im 20-mm-Sichtfeld knapp unter der Schnur, mit Kreuzschlitz.
   Darunter das Schnurfach (95 × 16 × 8,5 mm, läuft flach unter dem Ringboden weiter).
 

@@ -11,12 +11,15 @@ Alle Maße in mm. Koordinaten im Karton:
 
 Prinzip Einleger (Seitenansicht, ein Streifen, alle Falze quer):
 
-      Z ^   Deck (Löcher, Schnurkanal)                       Front des Kartons
+      Z ^  ==================================================  Front des Kartons
+        |  :  Seitenflansche (nach vorn, bis an die Front)    :
         |  ______________________________________________
-        | |                 Schnurboden                  |
-        | |___ Ringboden ____|‾‾‾‾‾‾|                     |
-        |      Füße               |__ Manschettenboden __|
-        +---------------------------------------------------> Y
+        | |   Deck (Löcher, Schnurkanal)                   |
+        | |___ Ringboden ____|‾‾‾‾‾‾|                       |
+        |      Füße               |__ Manschettenboden ____|
+        +---------------------------------------------------> Y   (Rückwand)
+   Nach vorn hält der Einleger über die Seitenflansche, nach hinten über Manschettenboden
+   und Füße. Eingeschoben wird er von oben.
    Ringmitte und Manschettenachse liegen auf derselben Höhe -> beide Schnurbohrungen
    liegen auf einer Linie, die Schnur läuft gerade. Restschnur unter dem Schnurboden.
 
@@ -248,8 +251,9 @@ def insert_layout():
     ]
 
 
-def flange_heights():
-    return ZD - Z_RB - t, ZD - Z_S - t, ZD - Z_CB - t
+def flange_height():
+    """Seitenflansche klappen nach vorn bis an die Front (0,2 mm Luft)."""
+    return p["Di"] - ZD - t / 2 - 0.2
 
 
 def insert_blank(deck_hole, slit_lines):
@@ -268,13 +272,12 @@ def insert_blank(deck_hole, slit_lines):
     for name, (a, b) in list(pos.items())[1:]:
         scores.append([(u0, a), (u1, a)])
 
-    # Deck: Y = v - vD0 ; Seitenflansche stützen das Deck auf den drei Böden ab
+    # Deck: Y = v - vD0 ; Seitenflansche klappen nach vorn bis an die Front des Kartons
     vD0, vD1 = pos["Deck"]
-    hR, hS, hC = flange_heights()
+    hF = flange_height()
     for sgn in (-1, 1):
         e = sgn * W / 2
-        f = [(0, 1), (hR, 4), (hR, YS1 - 0.5 - (hR - hS)), (hS, YS1 - 0.5), (hS, YS2 + 0.5),
-             (hC, YS2 + 0.5 + (hC - hS)), (hC, H - 4), (0, H - 1)]
+        f = [(0, 1), (hF, 3), (hF, H - 3), (0, H - 1)]
         parts.append(Polygon([(e + sgn * h, vD0 + y) for h, y in f]))
         scores.append([(e, vD0 + 1), (e, vD1 - 1)])
     hole = affinity.translate(deck_hole, 0, vD0)
@@ -386,7 +389,8 @@ def build_3d(ring, cuff, window, deck_hole):
     front = extrude_xy(box(X0, -t, X1, Hi + t).difference(window), Di, t)
     shell = (front.union(blk(X0, X1, -t, Hi + t, -t, 0))
              .union(blk(X0, -Wi / 2, -t, Hi + t, 0, Di)).union(blk(Wi / 2, X1, -t, Hi + t, 0, Di))
-             .union(blk(-Wi / 2, Wi / 2, Hi, Hi + t, 0, Di)).union(blk(-Wi / 2, Wi / 2, -t, 0, 0, Di)))
+             .union(blk(-Wi / 2, Wi / 2, -t, 0, 0, Di)))
+    lid = blk(-Wi / 2, Wi / 2, Hi, Hi + t, 0, Di + t).union(blk(-Wi / 2 + 1, Wi / 2 - 1, Hi - p["tuck"], Hi, t, 2 * t))
     # Aufhänger (aufgestellt): Rückwandlage + Doppelung, Euroloch
     eh = euro_hole(0, Hi + hh - p["euro_from_top"])
     hang = rounded_rect(X0, Hi - 10, X1, Hi + hh, 5).intersection(box(X0, Hi + t, X1, Hi + hh)).difference(eh)
@@ -409,9 +413,8 @@ def build_3d(ring, cuff, window, deck_hole):
               .union(blk(u0, u1, H - t, H, 0, ZD)))                  # Wand oben
     for x0, x1, yf, ye in legs():
         insert = insert.union(blk(x0, x1, yf - t / 2, yf + t / 2, 0, Z_RB - t))
-    hR, hS, hC = flange_heights()
-    fl = Polygon([(1, ZD - hR), (YS1 - 0.5, ZD - hR), (YS1 - 0.5, ZD - hS), (YS2 + 0.5, ZD - hS),
-                  (YS2 + 0.5, ZD - hC), (H - 1, ZD - hC), (H - 1, ZD), (1, ZD)])
+    hF = flange_height()
+    fl = Polygon([(1, ZD), (H - 1, ZD), (H - 3, ZD + hF), (3, ZD + hF)])
     for x0 in (u0, u1 - t):
         insert = insert.union(extrude_yz(fl, x0, t))
 
@@ -431,6 +434,7 @@ def build_3d(ring, cuff, window, deck_hole):
     parts = [
         ("Umverpackung", shell, (0.96, 0.95, 0.92)),
         ("Aufhaenger", hanger, (0.96, 0.95, 0.92)),
+        ("Deckel", lid, (0.96, 0.95, 0.92)),
         ("Einleger", insert, (0.80, 0.66, 0.46)),
         ("Ring", ring_s, (0.84, 1.0, 0.12)),
         ("Manschette", cuff_s, (0.84, 1.0, 0.12)),
