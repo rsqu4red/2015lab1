@@ -363,6 +363,26 @@ def save_svg(fn, groups, bb, margin=8.0):
         f.write("\n".join(out))
 
 
+# Falzlinien als Perforation (für Schneidplotter ohne Rillwerkzeug):
+# Bergfalz lange Schnitte, Talfalz kurze Schnitte -> am Teil erkennbar. Beginnt und endet mit Steg.
+PERF = {"berg": (2.5, 2.0), "tal": (1.2, 1.5)}
+
+
+def perforate(lines, cut, gap):
+    out = []
+    for pl in lines:
+        ls = LineString(pl)
+        L = ls.length
+        n = max(int((L - gap) // (cut + gap)), 1)
+        rest = L - n * cut - (n - 1) * gap          # gleichmäßig verteilen: Steg an beiden Enden
+        s = rest / 2
+        for _ in range(n):
+            a, b = ls.interpolate(s), ls.interpolate(min(s + cut, L))
+            out.append([(a.x, a.y), (b.x, b.y)])
+            s += cut + gap
+    return out
+
+
 def write_files(name, cut, mountain, valley):
     bb = bounds(cut + mountain + valley)
     o = bb[:2]
@@ -371,7 +391,17 @@ def write_files(name, cut, mountain, valley):
     save_dxf(os.path.join(OUT, f"{name}_schneiden.dxf"), [("SCHNEIDEN", 1, cut)], o, marks=bb)
     save_dxf(os.path.join(OUT, f"{name}_rillen.dxf"), [("RILLEN_BERG", 5, mountain), ("RILLEN_TAL", 3, valley)], o, marks=bb)
     save_svg(os.path.join(OUT, f"{name}.svg"), [cut, mountain, valley], bb)
+    write_perforated(name, cut, mountain, valley, o)
     return bb[2] - bb[0], bb[3] - bb[1]
+
+
+def write_perforated(name, cut, mountain, valley, origin):
+    """Alles rot, ein einziger Schneidauftrag. Falzlinien als Perforation."""
+    pb, pt = perforate(mountain, *PERF["berg"]), perforate(valley, *PERF["tal"])
+    save_dxf(os.path.join(OUT, f"{name}_perforiert.dxf"),
+             [("SCHNEIDEN", 1, cut), ("FALZ_BERG_PERFO", 1, pb), ("FALZ_TAL_PERFO", 1, pt)], origin)
+    bb = bounds(cut + mountain + valley)
+    save_svg(os.path.join(OUT, f"{name}_perforiert.svg"), [cut + pb + pt, [], []], bb)
 
 
 def write_sheet(box_paths, ins_paths, gap=12.0):
@@ -387,6 +417,7 @@ def write_sheet(box_paths, ins_paths, gap=12.0):
     save_dxf(os.path.join(OUT, "Bogen_12x24_komplett.dxf"),
              [("SCHNEIDEN", 1, groups[0]), ("RILLEN_BERG", 5, groups[1]), ("RILLEN_TAL", 3, groups[2])], bb[:2])
     save_svg(os.path.join(OUT, "Bogen_12x24.svg"), groups, bb)
+    write_perforated("Bogen_12x24", groups[0], groups[1], groups[2], bb[:2])
     return bb[2] - bb[0], bb[3] - bb[1]
 
 

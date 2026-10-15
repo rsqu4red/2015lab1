@@ -11,6 +11,7 @@ eingeschoben und sitzt nach hinten und vorn fest.
 |---|---|
 | `Umverpackung_komplett.dxf`, `Einleger_komplett.dxf` | Plotdatei, Ebenen SCHNEIDEN (rot), RILLEN_BERG (blau), RILLEN_TAL (grün) |
 | `Bogen_12x24_komplett.dxf` | beide Teile auf einem Bogen für die 12×24″-Matte |
+| `*_perforiert.dxf` / `.svg` | Falzlinien als Perforation (lang = Berg, kurz = Tal), alles rot – für Schneiden ohne Rillwerkzeug |
 | `*_schneiden.dxf`, `*_rillen.dxf` | dieselben Linien getrennt, mit Passerwinkeln (falls Studio die Farben verliert) |
 | `*.svg` | für Silhouette Studio Designer Edition |
 | `viewer.html` | 3D-Ansicht, Längsschnitt, Zuschnitte, Bestücken |

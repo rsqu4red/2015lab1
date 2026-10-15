@@ -22,7 +22,40 @@ Alle Dateien liegen in `out/`. Linienfarben: **rot = schneiden**, **blau = Bergf
 | Einleger | `Einleger_komplett.dxf` | 112,0 × 334,6 mm | 12×24″ |
 | **oder** beides auf einem Bogen | `Bogen_12x24_komplett.dxf` | 254,2 × 578,2 mm | 12×24″ |
 | Designer Edition | gleiche Namen als `.svg` (Farben bleiben sicher erhalten) | | |
+| **Ohne Rillwerkzeug (empfohlen für den Anfang)** | `Umverpackung_perforiert.dxf`, `Einleger_perforiert.dxf`, `Bogen_12x24_perforiert.dxf` | wie oben | wie oben |
 | Notlösung (Farben gehen verloren) | `*_schneiden.dxf` + `*_rillen.dxf` | wie oben | |
+
+## 2a. Falzen – so geht es mit dem Cameo 4
+
+Der Cameo 4 hat kein eigenes Rillwerkzeug. Es gibt drei Wege, sortiert nach Aufwand:
+
+| Weg | Was du brauchst | Ergebnis |
+|---|---|---|
+| **A · Perforation** (empfohlen) | nichts, nur die AutoBlade | Falzlinien als kurze Schnitte mit Stegen. Lässt sich sauber und leicht falzen. Die Schlitze sind an den Kanten sichtbar, für Muster ok. |
+| B · Anritzen | nichts, nur die AutoBlade | Die Klinge schneidet nur die oberste Schicht an. Unsichtbarer, braucht aber genaues Einstellen. |
+| C · Prägen | Prägestift / Embossing-Stylus mit Stiftadapter für Halter 2 (Zubehör, auch von Drittanbietern) oder leere Kugelschreibermine im Stiftadapter | Eingedrückte Rille wie bei gekauften Schachteln. Am schönsten. |
+
+**A · Perforation**
+1. Die `*_perforiert.dxf` öffnen. Alle Linien sind rot, die Falzlinien sind schon als Schnitt mit Stegen angelegt:
+   - **lange Striche (2,5 mm) = Bergfalz**, Druckseite außen,
+   - **kurze Striche (1,2 mm) = Talfalz**, Druckseite innen.
+2. Mit denselben Schneidwerten wie bisher schneiden (alles Rot, ein Auftrag).
+3. Nach dem Ausbrechen an der Tischkante oder mit einem Lineal entlang der Strichlinie falzen.
+
+Geht der Falz zu schwer, die Stege kürzer machen (`PERF` in `generate.py`). Reißt er zu leicht, die Stege länger machen.
+
+**B · Anritzen mit der AutoBlade**
+1. `*_komplett.dxf` nehmen. Blau und Grün bekommen eigene Werte: Klinge 1, Kraft 6–10, 1 Durchgang.
+2. Vorher an einem Reststück testen: Die Oberfläche soll nur angeritzt sein, die Rückseite darf nichts zeigen.
+3. Beim Falzen liegt die Ritzung außen. Bei Talfalzen (grün) liegt sie zwangsläufig innen; das geht auch, ist aber etwas weniger sauber.
+
+**C · Prägen mit Werkzeug in Halter 2**
+1. Den Prägestift oder die leere Kugelschreibermine mit dem Stiftadapter in Halter 2 setzen.
+2. Blau und Grün: Aktion *Skizzieren*, Werkzeug 2, Kraft 33, Tempo 2, 2 Durchgänge. Rot: wie gehabt, Werkzeug 1.
+3. Erst prägen, dann schneiden.
+4. Falzen so, dass die eingedrückte Rille **innen** im Falz liegt.
+
+**Ohne Gerät:** Die Linien im Komplett-Zuschnitt mit einem Stift zeichnen lassen (Sketch Pen in Halter 2, Aktion *Skizzieren*) und dann von Hand mit Falzbein und Lineal nachziehen.
 
 ## 3. Silhouette Studio vorbereiten
 
@@ -47,7 +80,8 @@ Modus **Linie** (nach Linienfarbe). Startwerte, vorher immer einen **Testschnitt
 |---|---|---|---|---|---|---|
 | Rot | Schneiden | 1 · AutoBlade | 8 | 30 | 3 | 2 |
 | Blau + Grün, mit Prägewerkzeug | Prägen / Skizzieren | 2 · Prägewerkzeug | – | 20 | 3 | 1 |
-| Blau + Grün, ohne Prägewerkzeug | Schneiden (nur anritzen) | 1 · AutoBlade | 1 | 10 | 3 | 1 |
+| Blau + Grün, ohne Prägewerkzeug | Schneiden (nur anritzen) | 1 · AutoBlade | 1 | 6–10 | 3 | 1 |
+| Perforierte Datei (alles rot) | Schneiden | 1 · AutoBlade | wie Rot | wie Rot | 3 | 2 |
 
 - **Testschnitt:** Der Karton muss sauber durch sein, die Matte darf nur leicht angeritzt sein. Geht er nicht durch: Kraft 33, dann Klinge 9, dann 3 Durchgänge. Beim Anritzen darf der Karton auf keinen Fall durchgeschnitten sein.
 - **Reihenfolge:** Erst rillen, dann schneiden, damit nichts verrutscht. Lässt sich die Reihenfolge nicht einstellen, zwei Aufträge nacheinander schicken, ohne die Matte zu entladen:
