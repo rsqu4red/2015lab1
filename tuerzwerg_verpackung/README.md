@@ -1,6 +1,6 @@
 # Türzwerg – Verpackung
 
-Faltschachtel (außen ca. 90 × 140 × 25 mm) mit Euroloch-Hänger über die volle Breite,
+Faltschachtel (außen 97 × 146 × 24,5 mm) mit Euroloch-Hänger über die volle Breite,
 der zum Versand 90° nach vorn auf den Deckel klappt, und einem Einleger, in dem
 Ringmitte und Manschettenachse auf gleicher Höhe liegen.
 
@@ -16,7 +16,22 @@ Ringmitte und Manschettenachse auf gleicher Höhe liegen.
 | `masse.json` | alle berechneten Maße |
 
 Die Zuschnitte zeigen die Außenseite (Druckseite).
-Umverpackung: 241 × 226 mm → 12×12″-Matte. Einleger: 116 × 322 mm → 12×24″-Matte.
+Umverpackung: 254 × 232 mm → 12×12″-Matte. Einleger: 123 × 335 mm → 12×24″-Matte.
+
+## Kartonmaße und Versandkarton
+
+Die Maße sind auf Standard-Versandkartons abgestimmt (Hänger umgeklappt, Höhe dann 147 mm, 2–3 % Spiel):
+
+| Versandkarton innen | Anordnung (stehend) | Stück | Füllung |
+|---|---|---|---|
+| 400 × 300 × 150 | 16 tief × 3 breit | 48 | 93 % |
+| 300 × 200 × 150 | 12 tief × 2 breit | 24 | 93 % |
+| 600 × 400 × 150 | 24 tief × 4 breit | 96 | 93 % |
+
+## Fenster
+
+- Manschettenfenster = Manschettenmaß 33 × 32 mm, Ringfenster Ø73.
+- Fenstergruppe senkrecht mittig: 10,3 mm Rand oben (über dem Manschettenfenster) und unten (unter dem Ringfenster).
 
 ## Einleger
 
@@ -25,16 +40,15 @@ Ringboden (4 Füße) · Stufe · Schnurboden · Stufe · Manschettenboden · Kle
 
 - Ringmitte und Manschettenachse liegen beide 11,95 mm über der Rückwand.
   Die Schnurbohrungen liegen dadurch auf einer Linie, die Schnur läuft gerade.
-- Manschette auf dem Boden an der Rückwand, 0,55 mm hinter der Front.
-  Ring auf dem Ringboden (4,95 mm, auf Füßen), 5 mm hinter der Front.
-- Deck auf 14,7 mm: Der Ring rastet ein (Loch 0,35 mm kleiner, Haltezungen),
-  die Manschette wird eingelegt und von den Fensterrändern an den Stirnseiten gehalten.
+- Manschette auf dem Boden an der Rückwand, 0,15 mm hinter der Front.
+  Ring auf dem Ringboden (4,95 mm, auf Füßen), 4,65 mm hinter der Front.
+- Deck auf 14,7 mm: Ring und Manschette rasten ein (Löcher 0,35 mm kleiner, Haltezungen).
 - Schnurboden im 20-mm-Sichtfeld knapp unter der Schnur, mit Kreuzschlitz.
-  Darunter das Schnurfach (88 × 16 × 8,5 mm, läuft flach unter dem Ringboden weiter).
+  Darunter das Schnurfach (95 × 16 × 8,5 mm, läuft flach unter dem Ringboden weiter).
 
 ## Hänger
 
-Volle Breite, 24 mm hoch (flacher als der Karton tief), doppellagig. Der Falz an der
+Volle Breite, 24 mm hoch (flacher als der Karton tief, 24,5 mm), doppellagig. Der Falz an der
 Oberkante der Rückwand wird für den Versand nur um 90° nach vorn gebogen, der Hänger
 liegt dann flach auf dem Deckel. Euroloch mit 5 mm Steg zur Oberkante.
 

@@ -41,8 +41,10 @@ TEILE = os.path.join(HERE, "teile")
 # --------------------------------------------------------------------------
 P = dict(
     t=0.45,            # Kartondicke (300–350 g/m² Faltschachtelkarton)
-    # Umverpackung (Innenmaße) -> außen ca. 90 x 140 x 25
-    Wi=89.0, Hi=139.0, Di=24.0,
+    # Umverpackung (Innenmaße) -> außen 97 x 146 x 24,5
+    # gewählt für Standard-Versandkartons: 400x300x150 = 48 Stk (3 x 16), 300x200x150 = 24 Stk,
+    # 600x400x150 = 96 Stk, jeweils 2–3 % Spiel (Hänger nach vorn umgeklappt)
+    Wi=96.1, Hi=145.1, Di=23.6,
     tuck=15.0,         # Einstecklasche
     dust=18.0,         # Staublaschen
     glue=13.0,         # Klebelasche Faltschachtel
@@ -51,26 +53,22 @@ P = dict(
     # Euroloch (DIN EN 13010 lt. Handelsangaben): 32 breit, 6 hoch, Mitte Ø10
     euro_w=32.0, euro_h=6.0, euro_d=10.0, euro_from_top=12.0,
     # Einleger
-    ins_w=88.0,        # Breite (Karton innen 89)
-    ins_h=137.5,       # Länge (Karton innen 139)
-    gap=0.55,          # Manschette -> Innenseite Front
+    ins_w=95.1,        # Breite (Karton innen 96,1)
+    ins_h=143.6,       # Länge (Karton innen 145,1)
+    gap=0.15,          # Manschette -> Innenseite Front (liegt fast an)
     deck_z=14.7,       # Deck knapp über Ringmitte/Manschettenachse (11,95)
     cord_floor_z=9.4,  # Schnurboden: knapp unter der Schnur
-    split_y1=79.0,     # Stufe Ringboden -> Schnurboden
-    split_y2=95.0,     # Stufe Schnurboden -> Manschettenboden
     ins_glue=10.0,
-    hole_clear=0.25,   # Luft um die Manschette (wird eingelegt)
-    ring_snap=0.35,    # Untermaß Ringloch (Ring rastet ein)
+    ring_snap=0.35,    # Untermaß Ring- und Manschettenloch (beide rasten ein)
     slit=3.0, slit_pitch=8.0,
     leg_w=8.0,         # Füße unter dem Ringboden
-    # Layout im Sichtfeld (Y = Höhe ab Innenboden)
-    ring_bottom=5.0,
+    # Layout im Sichtfeld: Fenstergruppe senkrecht mittig (Rand oben = Rand unten)
     cord_visible=20.0,
     cord_slot=10.0,    # Kreuzschlitz im Schnurboden
     cord_chan=12.0,    # Schnurkanal im Deck
     # Fenster
     win_ring_r=36.5,   # Ring ganz sichtbar (er rastet im Deck ein)
-    win_cuff_x=14.5,   # Manschette 33 lang -> 2 mm Rand an den Stirnseiten hält sie
+    win_corner=1.0,    # Eckenradius Manschettenfenster (Fenster = Manschettenmaß 33 x 32)
 )
 p = P
 t = p["t"]
@@ -80,7 +78,10 @@ CUFF_D = 23.0
 CUFF_L = 33.0
 KEEL = 20.5            # Kiel unter Manschettenachse (aus STEP)
 
-Yr = p["ring_bottom"] + R_RING                     # Ringmitte
+# Fenstergruppe: Ringfenster-Unterkante bis Manschetten-Oberkante, senkrecht mittig im Karton
+WIN_GROUP = p["win_ring_r"] + R_RING + p["cord_visible"] + KEEL + CUFF_D / 2
+MARGIN = (p["Hi"] - WIN_GROUP) / 2
+Yr = MARGIN + p["win_ring_r"]                      # Ringmitte
 Yc = Yr + R_RING + p["cord_visible"] + KEEL        # Manschettenachse
 Z_CB = t                                           # Manschette liegt auf dem Boden an der Rückwand
 Z_CUFF = Z_CB + CUFF_D / 2                         # Manschettenachse
@@ -88,7 +89,7 @@ Z_RING = Z_CUFF                                    # Ringmitte = Manschettenmitt
 Z_RB = Z_RING - RING_TH / 2                        # Ringboden (Oberseite)
 Z_S = p["cord_floor_z"]                            # Schnurboden (Oberseite)
 ZD = p["deck_z"]
-YS1, YS2 = p["split_y1"], p["split_y2"]
+YS1, YS2 = Yr + R_RING + 2, Yc - KEEL - 2          # Stufen um das Schnur-Sichtfeld
 Y_CORD = (Yr + R_RING + Yc - KEEL) / 2             # Mitte Schnur-Sichtfeld
 assert abs(p["Di"] - Z_CB - CUFF_D - p["gap"]) < 0.01
 
@@ -467,27 +468,33 @@ def main():
     ring_sil, cuff_sil = silhouettes(ring, cuff)
 
     ring_hole = ring_sil.buffer(-p["ring_snap"], resolution=32)     # Ring rastet ein
-    cuff_hole = cuff_sil.buffer(p["hole_clear"], resolution=8)      # Manschette wird eingelegt
+    cuff_hole = cuff_sil.buffer(-p["ring_snap"], resolution=8)      # Manschette rastet ebenfalls ein
     ch = p["cord_chan"] / 2
     channel = box(-ch, Yr + R_RING - 4, ch, Yc - KEEL + 2)
     deck_hole = smooth(unary_union([ring_hole, cuff_hole, channel]), 0.8)
 
-    def skip(x, y):  # Zungen nur am Ring, nicht am Schnurkanal
-        return y > Yr + R_RING - 9 and abs(x) < ch + 7 or y > Yr + R_RING + 1
-    slit_lines = slits_along(smooth(ring_hole, 0.8), p["slit_pitch"], p["slit"], skip)
+    def skip_r(x, y):  # Ring: keine Zungen am Schnurkanal
+        return y > Yr + R_RING - 9 and abs(x) < ch + 7
+    def skip_c(x, y):  # Manschette: keine Zungen am Schnurkanal
+        return y < Yc - KEEL + 1 and abs(x) < ch + 4
+    slit_lines = (slits_along(smooth(ring_hole, 0.8), p["slit_pitch"], p["slit"], skip_r)
+                  + slits_along(smooth(cuff_hole, 0.8), p["slit_pitch"], p["slit"], skip_c))
 
-    wx = p["win_cuff_x"]
-    window = smooth(unary_union([
+    cb = cuff_sil.bounds   # Manschettenfenster = Manschettenmaß
+    window = unary_union([
         Point(0, Yr).buffer(p["win_ring_r"], resolution=64),
-        rounded_rect(-wx, Yc - KEEL - 1.5, wx, Yc + CUFF_D / 2 + 1.5, 3),
-        box(-6, Yr + R_RING - 6, 6, Yc - KEEL + 3),
-    ]), 3)
+        rounded_rect(cb[0], cb[1], cb[2], cb[3], p["win_corner"]),
+        box(-6, Yr + R_RING - 2, 6, cb[1] + 1),
+    ])
+    window = window.buffer(2, resolution=16).buffer(-2, resolution=16)   # Übergänge zum Kanal ausrunden
 
     sizes = {"Umverpackung": write_files("Umverpackung", *blank_paths(box_blank(window))),
              "Einleger": write_files("Einleger", *blank_paths(insert_blank(deck_hole, slit_lines)))}
     build_3d(ring, cuff, window, deck_hole)
 
-    info = dict(params=P, Yr=Yr, Yc=Yc, Y_cord=Y_CORD, deck_Z=ZD,
+    info = dict(params=P, Yr=Yr, Yc=Yc, Y_cord=Y_CORD, deck_Z=ZD, split_y1=YS1, split_y2=YS2,
+                ring_bottom=Yr - R_RING, margin_top_bottom=round(MARGIN, 2),
+                cuff_window_mm=[round(cb[2] - cb[0], 1), round(cb[3] - cb[1], 1)],
                 ring_floor_Z=round(Z_RB, 2), cord_floor_Z=Z_S, cuff_floor_Z=round(Z_CB, 2),
                 ring_center_Z=round(Z_RING, 2), cuff_axis_Z=round(Z_CUFF, 2),
                 ring_front_gap=round(p["Di"] - Z_RB - RING_TH, 2), cuff_front_gap=p["gap"],

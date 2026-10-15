@@ -29,7 +29,7 @@ def section_svg(m):
     S = 3.6
     Hi, Di, t = pr["Hi"], pr["Di"], pr["t"]
     H, ZD = pr["ins_h"], m["deck_Z"]
-    Y1, Y2 = pr["split_y1"], pr["split_y2"]
+    Y1, Y2 = m["split_y1"], m["split_y2"]
     ZR, ZS, ZC, Yr, Yc, ym = m["ring_floor_Z"], m["cord_floor_Z"], m["cuff_floor_Z"], m["Yr"], m["Yc"], m["Y_cord"]
     zc = m["cuff_axis_Z"]
     padL, padT = 14, 22
@@ -45,7 +45,7 @@ def section_svg(m):
     o.append(f'<path class="ins deck" d="M{X(0.3):.1f},{Y(ZD):.1f} L{X(H):.1f},{Y(ZD):.1f}"/>')
     for yy in (Yr - 21, Yr + 21):   # Füße
         o.append(f'<path class="ins" d="M{X(yy):.1f},{Y(ZR - t):.1f} L{X(yy):.1f},{Y(0):.1f}"/>')
-    for y0, y1 in ((pr["ring_bottom"], pr["ring_bottom"] + 11.5), (Yr + 36 - 11.5, Yr + 36)):
+    for y0, y1 in ((m["ring_bottom"], m["ring_bottom"] + 11.5), (Yr + 36 - 11.5, Yr + 36)):
         o.append(f'<rect class="part" x="{X(y0):.1f}" y="{Y(ZR + 14):.1f}" width="{(y1 - y0) * S:.1f}" height="{14 * S:.1f}" rx="{5 * S:.1f}"/>')
     o.append(f'<path class="part" d="M{X(Yc - 20.5):.1f},{Y(zc):.1f} L{X(Yc - 6):.1f},{Y(zc + 8):.1f} L{X(Yc - 6):.1f},{Y(zc - 8):.1f} Z"/>')
     o.append(f'<circle class="part" cx="{X(Yc):.1f}" cy="{Y(zc):.1f}" r="{11.5 * S:.1f}"/>')
@@ -75,7 +75,7 @@ def dl(m):
     bw, bh = m["blank_sizes_mm"]["Umverpackung"]
     iw, ih = m["blank_sizes_mm"]["Einleger"]
     rows = [
-        ("Karton außen (B×H×T)", f"{o[0]:.0f} × {o[1]:.0f} × {o[2]:.0f} mm"),
+        ("Karton außen (B×H×T)", f"{de(o[0], 0)} × {de(o[1], 0)} × {de(o[2])} mm"),
         ("Hänger, klappt nach vorn", f"+{pr['hang_h']:.0f} mm"),
         ("Ring → Front", f"{de(m['ring_front_gap'], 2)} mm"),
         ("Manschette → Front", f"{de(m['cuff_front_gap'], 2)} mm"),
@@ -85,6 +85,8 @@ def dl(m):
         ("Zuschnitt Einleger", f"{iw:.0f} × {ih:.0f} mm"),
         ("Matte Einleger", "12×24″" if max(iw, ih) > 290 else "12×12″ / A4"),
         ("Ringmitte = Manschettenachse", f"{de(m['ring_center_Z'], 2)} mm"),
+        ("Manschettenfenster", "{} × {} mm".format(*[de(x, 0) for x in m["cuff_window_mm"]])),
+        ("Rand oben = unten", f"{de(m['margin_top_bottom'])} mm"),
     ]
     return "<dl>" + "".join(f"<dt>{a}</dt><dd>{b}</dd>" for a, b in rows) + "</dl>"
 
@@ -92,16 +94,19 @@ def dl(m):
 HOW = {
     "C": """<div class="note"><h3>Mitte auf Mitte</h3>
 <p>Die Mitte des Rings liegt auf derselben Höhe wie die Achse der Manschette (11,95 mm über der Rückwand). Damit liegen beide Schnurbohrungen auf einer Linie und die Schnur läuft gerade.</p>
-<p>Die Manschette liegt auf dem Boden an der Rückwand und reicht bis 0,55 mm an die Front. Der Ring liegt auf einem Boden 4,5 mm höher, der auf vier Füßen steht. Er sitzt 5 mm hinter der Front, statt 9,5 mm wie bei gleichem Boden.</p>
-<p>Das Deck liegt auf 14,7 mm, knapp über der breitesten Stelle beider Teile. Der Ring rastet ein (Loch 0,35 mm kleiner, kurze Zungen). Die Manschette wird eingelegt, die Fensterränder an ihren Stirnseiten halten sie.</p></div>
+<p>Die Manschette liegt auf dem Boden an der Rückwand und reicht bis 0,15 mm an die Front. Der Ring liegt auf einem Boden 4,5 mm höher, der auf vier Füßen steht, und sitzt 4,65 mm hinter der Front.</p>
+<p>Das Deck liegt auf 14,7 mm, knapp über der breitesten Stelle beider Teile. Ring und Manschette rasten ein: Beide Löcher sind 0,35 mm kleiner als das Teil, kurze Zungen geben beim Eindrücken nach.</p></div>
+<div class="note"><h3>Fenster und Ränder</h3>
+<p>Das Manschettenfenster hat genau das Maß der Manschette (33 × 32 mm), man sieht ihre Größe. Das Ringfenster ist Ø73, 1 mm größer als der Ring.</p>
+<p>Die Fenstergruppe sitzt senkrecht mittig: Von der Oberkante des Manschettenfensters bis zur Kartonoberkante sind es 10,3 mm, genauso viel wie von der Unterkante des Ringfensters bis zur Kartonunterkante. Seitlich bleiben neben dem Ringfenster je 11,8 mm.</p></div>
 <div class="note"><h3>Schnur</h3>
-<p>Im 20-mm-Sichtfeld liegt die Schnur gerade auf Höhe der Bohrungen über einem Schnurboden. Mittig darin ist ein Kreuzschlitz, durch den die Restschnur von rund 28 cm als Schlaufe ins Fach darunter geschoben wird. Das Fach misst 88 × 16 × 8,5 mm und läuft unter dem Ringboden flach weiter.</p>
-<p>Einleger: ein Streifen mit 8 Querfalzen, Seitenflanschen und 4 Füßen, 116 × 322 mm, braucht die 12×24″-Matte.</p></div>""",
+<p>Im 20-mm-Sichtfeld liegt die Schnur gerade auf Höhe der Bohrungen über einem Schnurboden. Mittig darin ist ein Kreuzschlitz, durch den die Restschnur von rund 28 cm als Schlaufe ins Fach darunter geschoben wird. Das Fach misst 95 × 16 × 8,5 mm und läuft unter dem Ringboden flach weiter.</p>
+<p>Einleger: ein Streifen mit 8 Querfalzen, Seitenflanschen und 4 Füßen, 123 × 335 mm, braucht die 12×24″-Matte.</p></div>""",
 }
 
 STEPS = {
     "C": """<li><b>Ring eindrücken.</b> Einleger flach hinlegen, Ring mit Bohrung nach oben ins runde Loch drücken, bis er einrastet.</li>
-<li><b>Manschette einlegen.</b> Mit Kiel zum Ring ins obere Loch.</li>
+<li><b>Manschette eindrücken.</b> Mit Kiel zum Ring ins obere Loch drücken, bis sie einrastet.</li>
 <li><b>Schnur verstauen.</b> Mitte der Schnur als Schlaufe durch den Kreuzschlitz ins Schnurfach schieben, bis beide Stücke gerade liegen.</li>
 <li><b>Einschieben.</b> Karton mit der Front nach oben halten, Einleger von unten einschieben.</li>
 <li><b>Schließen.</b> Staublaschen einklappen, Bodendeckel einstecken. Hänger für den Versand nach vorn auf den Deckel klappen.</li>""",
@@ -225,7 +230,7 @@ th{font-weight:600;color:var(--muted)}
 <div class="wrap">
 <header>
   <h1>Türzwerg <span class="tag">Verpackung</span></h1>
-  <p>Faltschachtel 90 × 140 × 25 mm mit Euroloch-Hänger, der zum Versand nach vorn auf den Deckel klappt. Im Einleger liegen Ringmitte und Manschettenachse auf gleicher Höhe, die Schnur läuft gerade und verschwindet mittig in einem Schnurfach.</p>
+  <p>Faltschachtel 97 × 146 × 24,5 mm mit Euroloch-Hänger, der zum Versand nach vorn auf den Deckel klappt. Im Einleger liegen Ringmitte und Manschettenachse auf gleicher Höhe, die Schnur läuft gerade und verschwindet mittig in einem Schnurfach.</p>
 </header>
 
 <section class="grid" aria-label="3D-Entwurf">
@@ -267,9 +272,16 @@ th{font-weight:600;color:var(--muted)}
   %%HOW%%
   <div class="note" style="margin-top:20px">
     <h3>Hänger und Versand</h3>
-    <p>Der Hänger klappt 90° nach vorn und liegt dann flach auf dem Deckel. Der Falz wird nur um 90° gebogen statt um 180°. Damit das geht, ist der Hänger 24 mm hoch, also etwas flacher als der Karton tief (24,9 mm). Umgeklappt steht nichts über.</p>
-    <p>Das Euroloch sitzt mit 5 mm Steg unter der Oberkante. Die Doppelung ist 1 mm kürzer, damit sie beim Umklappen nicht gegen den Deckel drückt. Eine Verriegelung braucht es nicht: Am Haken hängt die Schachtel mit klappbarem Hänger praktisch genauso schräg wie mit starrem, weil ihr Schwerpunkt in beiden Fällen etwa 12 mm vor der Rückwand liegt.</p>
-    <p>Im Umkarton sind die Schachteln dann glatte Quader von 90 × 141 × 25 mm. 100 Stück: 2 Lagen à 5 × 10, Umkarton innen ca. 450 × 250 × 285 mm (32 l).</p>
+    <p>Der Hänger klappt 90° nach vorn und liegt dann flach auf dem Deckel. Er ist 24 mm hoch, etwas flacher als der Karton tief (24,5 mm), umgeklappt steht nichts über. Das Euroloch sitzt mit 5 mm Steg unter der Oberkante, die Doppelung ist 1 mm kürzer, damit sie beim Umklappen nicht gegen den Deckel drückt.</p>
+    <p>Die Kartonmaße 97 × 146 × 24,5 mm sind auf Standard-Versandkartons abgestimmt, mit 2–3 % Spiel und umgeklapptem Hänger (Höhe dann 147 mm):</p>
+    <div class="tw"><table>
+      <tr><th>Versandkarton innen</th><th>Anordnung (stehend)</th><th>Stück</th><th>Spiel L / B / H</th><th>Füllung</th></tr>
+      <tr><td>400 × 300 × 150 (Euro-Modul)</td><td>16 tief × 3 breit</td><td>48</td><td>8 / 9 / 3 mm</td><td>93 %</td></tr>
+      <tr><td>300 × 200 × 150</td><td>12 tief × 2 breit</td><td>24</td><td>6 / 6 / 3 mm</td><td>93 %</td></tr>
+      <tr><td>600 × 400 × 150 (Euro-Modul)</td><td>24 tief × 4 breit</td><td>96</td><td>12 / 12 / 3 mm</td><td>93 %</td></tr>
+      <tr><td>400 × 300 × 300</td><td>16 × 3, zwei Lagen</td><td>96</td><td>8 / 9 / 6 mm</td><td>93 %</td></tr>
+    </table></div>
+    <p>Mit den bisherigen 90 × 140 × 24,9 mm wären es im 400 × 300 × 150 nur 45 Stück bei 79 % Füllung: Die 24,9 mm Tiefe gehen in 300 und 400 nicht mit Spiel auf, die 90 mm Breite lassen 30 mm Luft.</p>
   </div>
 </section>
 
@@ -293,7 +305,7 @@ th{font-weight:600;color:var(--muted)}
         <li><code>*_komplett.dxf</code>: Schneiden (rot) und Rillen (blau) zusammen. In Studio unter „Schneiden“ → „Linienfarbe“ getrennt einstellen.</li>
         <li><code>*_schneiden.dxf</code> / <code>*_rillen.dxf</code>: getrennt, falls die Farben beim DXF-Import verloren gehen. Beide an Position 0/0 importieren.</li>
         <li><code>*.svg</code>: für die Designer Edition, Maßstab in mm.</li>
-        <li>Nach dem Import die Breite prüfen: Umverpackung 241 mm.</li>
+        <li>Nach dem Import die Breite prüfen: Umverpackung 254 mm.</li>
       </ul>
     </div>
     <div class="note">
