@@ -14,16 +14,21 @@ Die Dateien sind für 0,45 mm Karton gerechnet. Bei deutlich anderer Dicke `t` i
 
 ## 2. Welche Datei?
 
-Alle Dateien liegen in `out/`. Linienfarben: **rot = schneiden**, **blau = Bergfalz** (Druckseite außen), **grün = Talfalz** (Druckseite innen).
+Alle Dateien liegen in `out/`. Linienfarben: **rot = schneiden**, **blau = Bergfalz** (Druckseite außen), **grün = Talfalz** (Druckseite innen), **schwarz = 30-mm-Kontrollquadrat** (nicht schneiden, nur zum Prüfen der Größe).
 
-| Was | Datei | Größe (B × H) | Matte |
-|---|---|---|---|
-| Umverpackung | `Umverpackung_komplett.dxf` | 254,2 × 231,6 mm | 12×12″ |
-| Einleger | `Einleger_komplett.dxf` | 112,0 × 334,6 mm | 12×24″ |
-| **oder** beides auf einem Bogen | `Bogen_12x24_komplett.dxf` | 254,2 × 578,2 mm | 12×24″ |
-| Designer Edition | gleiche Namen als `.svg` (Farben bleiben sicher erhalten) | | |
-| **Ohne Rillwerkzeug (empfohlen für den Anfang)** | `Umverpackung_perforiert.dxf`, `Einleger_perforiert.dxf`, `Bogen_12x24_perforiert.dxf` | wie oben | wie oben |
-| Notlösung (Farben gehen verloren) | `*_schneiden.dxf` + `*_rillen.dxf` | wie oben | |
+| Was | Datei (mit Rillwerkzeug) | Datei (ohne Rillwerkzeug) | Größe (B × H) | Matte |
+|---|---|---|---|---|
+| Umverpackung | `Umverpackung_komplett.dxf` | `Umverpackung_perforiert.dxf` | 254,2 × 231,6 mm | 12×12″ |
+| **Einleger, zweiteilig (empfohlen)** | `Einleger_2teilig_komplett.dxf` | `Einleger_2teilig_perforiert.dxf` | 217,1 × 213,0 mm | 12×12″ |
+| Einleger, einteilig | `Einleger_komplett.dxf` | `Einleger_perforiert.dxf` | 112,0 × 372,6 mm | nur 12×24″ |
+| beides auf einem Bogen | `Bogen_12x24_komplett.dxf` | `Bogen_12x24_perforiert.dxf` | 254,2 × 578,2 mm | nur 12×24″ |
+
+> **Wichtig – Einleger zu klein?** Ist eine Datei länger als die eingestellte Seite (12×12″ = 304,8 mm), verkleinert Silhouette Studio sie beim Öffnen auf Seitengröße. Der einteilige Einleger (334,6 mm) wird dann um etwa 9 % zu klein, und Ring und Manschette passen nicht mehr in die Löcher. Deshalb:
+> 1. **Zuerst** *Seite einrichten* auf die richtige Matte stellen, **dann** die Datei öffnen.
+> 2. Auf der 12×12″-Matte den **zweiteiligen Einleger** nehmen.
+> 3. Nach dem Öffnen das **schwarze Kontrollquadrat** messen: Es muss genau **30,0 × 30,0 mm** sein. Wenn nicht, alles markieren und proportional so skalieren, dass das Quadrat 30,0 mm misst.
+
+Designer Edition: gleiche Namen als `.svg`. Notlösung, wenn die Farben verloren gehen: `*_schneiden.dxf` + `*_rillen.dxf` (siehe 3.5).
 
 ## 2a. Falzen – so geht es mit dem Cameo 4
 
@@ -62,7 +67,8 @@ Geht der Falz zu schwer, die Stege kürzer machen (`PERF` in `generate.py`). Rei
 1. **Seite einrichten** (Page Setup): Maschine *CAMEO 4*, Schneidematte *CAMEO 12×12 in* bzw. *12×24 in*, Mediengröße gleich, Hochformat.
 2. **Datei öffnen:** *Datei → Öffnen*, Dateityp *DXF*, Datei wählen.
    Fragt Studio nach der Größe oder gibt es unter *Bearbeiten → Einstellungen → Importieren* eine DXF-Option: **Originalgröße** wählen.
-3. **Größe prüfen:** Alles markieren und Breite und Höhe ablesen (Fenster *Transformieren → Skalieren*). Sie müssen den Werten aus der Tabelle oben entsprechen. Wenn nicht: Proportionen sperren und die Breite genau eintippen.
+3. **Größe prüfen:** Das schwarze Kontrollquadrat markieren, es muss 30,0 × 30,0 mm groß sein. Zusätzlich die Gesamtgröße mit der Tabelle oben vergleichen. Weicht sie ab: alles markieren, Proportionen sperren und die Breite genau eintippen.
+   Danach das Kontrollquadrat löschen oder auf „Kein Schnitt“ stellen.
 4. **Platzieren:** Das Teil innerhalb des Schneidebereichs ablegen, ca. 10 mm Abstand zum Rand. Den Karton später genauso auf die Matte legen.
 5. **Farben prüfen** (Fenster *Linienstil*): Rot, Blau und Grün müssen zu sehen sein.
    Sind alle Linien gleichfarbig, die Teildateien nehmen:
@@ -118,6 +124,7 @@ Modus **Linie** (nach Linienfarbe). Startwerte, vorher immer einen **Testschnitt
    5. Stufe
    6. Manschettenboden
 5. Die Klebelasche am Ende des Manschettenbodens hochklappen und innen an die Wand oben kleben.
+   **Zweiteiliger Einleger:** Teil A (Böden) hat am Ende des Ringbodens eine zusätzliche Klebelasche. Sie wird hochgeklappt und innen an die „Wand unten“ von Teil B (Deck) geklebt. Danach ist der Einleger genau wie die einteilige Version.
 6. **Kontrolle:** Auf den Rücken gelegt stehen Manschettenboden und Füße auf dem Tisch, die Flansche zeigen nach oben. Das Deck liegt eben.
 
 ## 8. Bestücken

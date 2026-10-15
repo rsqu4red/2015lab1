@@ -294,7 +294,46 @@ def insert_blank(deck_hole, slit_lines):
     cuts += cross_slit(0, vS1 - (Y_CORD - YS1), p["cord_slot"])
 
     outline = unary_union([q.buffer(0.001) for q in parts]).buffer(-0.001)
-    return dict(outline=outline, holes=[hole], cuts=cuts, scores=scores, valleys=valleys)
+    return dict(outline=outline, holes=[hole], cuts=cuts, scores=scores, valleys=valleys, pos=pos, W=W)
+
+
+def insert_blank_2teilig(full, gap=10.0, glue=8.0):
+    """Einleger in zwei Teile (je < 180 mm lang) für die 12×12″-Matte.
+    Trennung am Falz Ringboden | Wand unten. Teil A bekommt dort eine Klebelasche,
+    die innen an die Wand unten geklebt wird."""
+    vs = full["pos"]["Wand unten"][0]
+    W = full["W"]
+    u0, u1 = -W / 2, W / 2
+    big = 1e4
+    outline = full["outline"]
+    A = unary_union([outline.intersection(box(-big, -big, big, vs)),
+                     Polygon([(u0, vs), (u1, vs), (u1 - 5, vs + glue), (u0 + 5, vs + glue)])]).buffer(0)
+    B = outline.intersection(box(-big, vs, big, big)).buffer(0)
+    side = lambda pl: "A" if max(y for _, y in pl) <= vs + 1e-6 else "B"
+    parts = {"A": dict(outline=A, holes=[], cuts=[], scores=[], valleys=[]),
+             "B": dict(outline=B, holes=[], cuts=[], scores=[], valleys=[])}
+    for h in full["holes"]:
+        parts["A" if h.centroid.y < vs else "B"]["holes"].append(h)
+    for c in full["cuts"]:
+        parts[side(c)]["cuts"].append(c)
+    for key in ("scores", "valleys"):
+        for ln in full[key]:
+            ys = [y for _, y in ln]
+            if all(abs(y - vs) < 1e-6 for y in ys):
+                parts["A"][key].append(ln)          # wird zum Falz der neuen Klebelasche
+            else:
+                parts[side(ln)][key].append(ln)
+    # Teil B neben Teil A legen, beide unten bündig
+    bA, bB = parts["A"]["outline"].bounds, parts["B"]["outline"].bounds
+    dx, dy = bA[2] - bB[0] + gap, bA[1] - bB[1]
+    mv = lambda pl: [(x + dx, y + dy) for x, y in pl]
+    pb = parts["B"]
+    out = dict(outline=unary_union([parts["A"]["outline"], affinity.translate(pb["outline"], dx, dy)]),
+               holes=parts["A"]["holes"] + [affinity.translate(h, dx, dy) for h in pb["holes"]],
+               cuts=parts["A"]["cuts"] + [mv(c) for c in pb["cuts"]],
+               scores=parts["A"]["scores"] + [mv(c) for c in pb["scores"]],
+               valleys=parts["A"]["valleys"] + [mv(c) for c in pb["valleys"]])
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -321,7 +360,7 @@ def blank_paths(b):
 
 
 LAYERS = [("SCHNEIDEN", 1, "#e00000", None), ("RILLEN_BERG", 5, "#0050ff", "3,1.5"),
-          ("RILLEN_TAL", 3, "#00a040", "1,1.5")]
+          ("RILLEN_TAL", 3, "#00a040", "1,1.5"), ("KONTROLLE_30MM", 7, "#000000", None)]
 
 
 def bounds(paths):
@@ -383,25 +422,51 @@ def perforate(lines, cut, gap):
     return out
 
 
+CHECK = 30.0   # Kontrollquadrat 30 × 30 mm
+
+
+def control_square(cut, sheet=None):
+    """Freie Stelle neben dem Teil für ein 30-mm-Kontrollquadrat (liegt im Abfall)."""
+    closed = [Polygon(pl) for pl in cut if len(pl) > 3 and math.dist(pl[0], pl[-1]) < 1e-6]
+    body = unary_union(closed).buffer(4)
+    x0, y0, x1, y1 = sheet or bounds(cut)
+    y = y0
+    while y + CHECK <= y1:
+        x = x0
+        while x + CHECK <= x1:
+            sq = box(x, y, x + CHECK, y + CHECK)
+            if not sq.intersects(body):
+                return [list(sq.exterior.coords)]
+            x += 2.0
+        y += 2.0
+    bx = bounds(cut)                                  # kein Platz: unter das Teil
+    sq = box(bx[0], bx[1] - CHECK - 8, bx[0] + CHECK, bx[1] - 8)
+    return [list(sq.exterior.coords)]
+
+
 def write_files(name, cut, mountain, valley):
     bb = bounds(cut + mountain + valley)
+    sq = control_square(cut)
+    bb = bounds(cut + mountain + valley + sq)
     o = bb[:2]
     save_dxf(os.path.join(OUT, f"{name}_komplett.dxf"),
-             [("SCHNEIDEN", 1, cut), ("RILLEN_BERG", 5, mountain), ("RILLEN_TAL", 3, valley)], o)
+             [("SCHNEIDEN", 1, cut), ("RILLEN_BERG", 5, mountain), ("RILLEN_TAL", 3, valley),
+              ("KONTROLLE_30MM", 7, sq)], o)
     save_dxf(os.path.join(OUT, f"{name}_schneiden.dxf"), [("SCHNEIDEN", 1, cut)], o, marks=bb)
     save_dxf(os.path.join(OUT, f"{name}_rillen.dxf"), [("RILLEN_BERG", 5, mountain), ("RILLEN_TAL", 3, valley)], o, marks=bb)
-    save_svg(os.path.join(OUT, f"{name}.svg"), [cut, mountain, valley], bb)
-    write_perforated(name, cut, mountain, valley, o)
+    save_svg(os.path.join(OUT, f"{name}.svg"), [cut, mountain, valley, sq], bb)
+    write_perforated(name, cut, mountain, valley, o, sq)
     return bb[2] - bb[0], bb[3] - bb[1]
 
 
-def write_perforated(name, cut, mountain, valley, origin):
+def write_perforated(name, cut, mountain, valley, origin, sq):
     """Alles rot, ein einziger Schneidauftrag. Falzlinien als Perforation."""
     pb, pt = perforate(mountain, *PERF["berg"]), perforate(valley, *PERF["tal"])
     save_dxf(os.path.join(OUT, f"{name}_perforiert.dxf"),
-             [("SCHNEIDEN", 1, cut), ("FALZ_BERG_PERFO", 1, pb), ("FALZ_TAL_PERFO", 1, pt)], origin)
-    bb = bounds(cut + mountain + valley)
-    save_svg(os.path.join(OUT, f"{name}_perforiert.svg"), [cut + pb + pt, [], []], bb)
+             [("SCHNEIDEN", 1, cut), ("FALZ_BERG_PERFO", 1, pb), ("FALZ_TAL_PERFO", 1, pt),
+              ("KONTROLLE_30MM", 7, sq)], origin)
+    bb = bounds(cut + mountain + valley + sq)
+    save_svg(os.path.join(OUT, f"{name}_perforiert.svg"), [cut + pb + pt, [], [], sq], bb)
 
 
 def write_sheet(box_paths, ins_paths, gap=12.0):
@@ -413,11 +478,13 @@ def write_sheet(box_paths, ins_paths, gap=12.0):
     b = move(box_paths, bb_b, 0, 0)
     i = move(ins_paths, bb_i, 0, hb + gap)
     groups = [b[k] + i[k] for k in range(3)]
-    bb = bounds(sum(groups, []))
+    sq = control_square(groups[0])
+    bb = bounds(sum(groups, []) + sq)
     save_dxf(os.path.join(OUT, "Bogen_12x24_komplett.dxf"),
-             [("SCHNEIDEN", 1, groups[0]), ("RILLEN_BERG", 5, groups[1]), ("RILLEN_TAL", 3, groups[2])], bb[:2])
-    save_svg(os.path.join(OUT, "Bogen_12x24.svg"), groups, bb)
-    write_perforated("Bogen_12x24", groups[0], groups[1], groups[2], bb[:2])
+             [("SCHNEIDEN", 1, groups[0]), ("RILLEN_BERG", 5, groups[1]), ("RILLEN_TAL", 3, groups[2]),
+              ("KONTROLLE_30MM", 7, sq)], bb[:2])
+    save_svg(os.path.join(OUT, "Bogen_12x24.svg"), groups + [sq], bb)
+    write_perforated("Bogen_12x24", groups[0], groups[1], groups[2], bb[:2], sq)
     return bb[2] - bb[0], bb[3] - bb[1]
 
 
@@ -557,9 +624,12 @@ def main():
     window = window.buffer(2, resolution=16).buffer(-2, resolution=16)   # Übergänge zum Kanal ausrunden
 
     box_paths = blank_paths(box_blank(window))
-    ins_paths = blank_paths(insert_blank(deck_hole, slit_lines))
+    ins_full = insert_blank(deck_hole, slit_lines)
+    ins_paths = blank_paths(ins_full)
+    ins2_paths = blank_paths(insert_blank_2teilig(ins_full))
     sizes = {"Umverpackung": write_files("Umverpackung", *box_paths),
              "Einleger": write_files("Einleger", *ins_paths),
+             "Einleger_2teilig": write_files("Einleger_2teilig", *ins2_paths),
              "Bogen_12x24": write_sheet(box_paths, ins_paths)}
     build_3d(ring, cuff, window, deck_hole)
 

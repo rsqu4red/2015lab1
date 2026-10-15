@@ -315,11 +315,12 @@ th{font-weight:600;color:var(--muted)}
       <div class="tw"><table>
         <tr><th>Was</th><th>Datei</th><th>Größe</th><th>Matte</th></tr>
         <tr><td>Umverpackung</td><td><code>Umverpackung_komplett.dxf</code></td><td>254,2 × 231,6</td><td>12×12″</td></tr>
-        <tr><td>Einleger</td><td><code>Einleger_komplett.dxf</code></td><td>112,0 × 334,6</td><td>12×24″</td></tr>
+        <tr><td>Einleger, zweiteilig</td><td><code>Einleger_2teilig_komplett.dxf</code></td><td>217,1 × 213,0</td><td>12×12″</td></tr>
+        <tr><td>Einleger, einteilig</td><td><code>Einleger_komplett.dxf</code></td><td>112,0 × 372,6</td><td>12×24″</td></tr>
         <tr><td>beides</td><td><code>Bogen_12x24_komplett.dxf</code></td><td>254,2 × 578,2</td><td>12×24″</td></tr>
       </table></div>
       <p>Designer Edition: gleiche Namen als <code>.svg</code>. Gehen beim DXF-Import die Farben verloren: <code>*_schneiden.dxf</code> öffnen, <code>*_rillen.dxf</code> zusammenführen, beides oben links ausrichten (gleiche Passerwinkel), Winkel löschen.</p>
-      <p>Nach dem Import die Breite prüfen und bei Abweichung proportional auf das Tabellenmaß skalieren.</p>
+      <p><b>Wichtig:</b> erst die Seite auf die richtige Matte einstellen, dann öffnen. Ist die Datei länger als die Seite, verkleinert Studio sie. Jede Datei enthält ein schwarzes Kontrollquadrat, das genau 30,0 mm messen muss; sonst proportional nachskalieren.</p>
     </div>
     <div class="note">
       <h3>Startwerte, 300–350 g/m² Karton (0,45 mm)</h3>

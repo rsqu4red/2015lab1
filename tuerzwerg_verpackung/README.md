@@ -10,6 +10,7 @@ eingeschoben und sitzt nach hinten und vorn fest.
 | Datei | Zweck |
 |---|---|
 | `Umverpackung_komplett.dxf`, `Einleger_komplett.dxf` | Plotdatei, Ebenen SCHNEIDEN (rot), RILLEN_BERG (blau), RILLEN_TAL (grün) |
+| `Einleger_2teilig_*.dxf` | Einleger in zwei Teilen, passt auf die 12×12″-Matte |
 | `Bogen_12x24_komplett.dxf` | beide Teile auf einem Bogen für die 12×24″-Matte |
 | `*_perforiert.dxf` / `.svg` | Falzlinien als Perforation (lang = Berg, kurz = Tal), alles rot – für Schneiden ohne Rillwerkzeug |
 | `*_schneiden.dxf`, `*_rillen.dxf` | dieselben Linien getrennt, mit Passerwinkeln (falls Studio die Farben verliert) |
@@ -19,7 +20,8 @@ eingeschoben und sitzt nach hinten und vorn fest.
 | `masse.json` | alle berechneten Maße |
 
 Die Zuschnitte zeigen die Außenseite (Druckseite). Plotten, Falten, Bestücken: siehe `ANLEITUNG_SILHOUETTE.md`.
-Umverpackung: 254 × 232 mm → 12×12″-Matte. Einleger: 112 × 335 mm → 12×24″-Matte.
+Umverpackung: 254 × 232 mm → 12×12″-Matte. Einleger zweiteilig: 217 × 213 mm → 12×12″-Matte, einteilig 112 × 373 mm → 12×24″-Matte.
+Jede Komplett-/Perforiert-Datei enthält ein 30-mm-Kontrollquadrat (schwarz) zum Prüfen der Importgröße.
 
 ## Kartonmaße und Versandkarton
 

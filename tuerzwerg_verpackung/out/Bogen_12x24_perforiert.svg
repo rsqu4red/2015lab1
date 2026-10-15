@@ -628,4 +628,7 @@
 </g>
 <g id="RILLEN_TAL" fill="none" stroke="#00a040" stroke-width="0.25" stroke-dasharray="1,1.5">
 </g>
+<g id="KONTROLLE_30MM" fill="none" stroke="#000000" stroke-width="0.25">
+<path d="M38.000,586.200 L38.000,556.200 L8.000,556.200 L8.000,586.200 L38.000,586.200"/>
+</g>
 </svg>
