@@ -1,4 +1,5 @@
 {
+  "variant": "B",
   "params": {
     "t": 0.45,
     "Wi": 89.0,
@@ -7,18 +8,18 @@
     "tuck": 15.0,
     "dust": 18.0,
     "glue": 13.0,
-    "hang_h": 35.0,
+    "hang_h": 28.0,
     "lock_w": 30.0,
     "lock_l": 11.0,
     "lock_slit_z": 8.5,
     "euro_w": 32.0,
     "euro_h": 6.0,
     "euro_d": 10.0,
-    "euro_from_top": 14.0,
+    "euro_from_top": 13.0,
     "ins_w": 88.0,
     "ins_h": 136.0,
     "gap": 0.55,
-    "deck_z": 14.2,
+    "deck_z": 10.0,
     "split_y": 91.0,
     "ins_glue": 10.0,
     "hole_clear": 0.25,
@@ -26,28 +27,33 @@
     "cord_visible": 20.0,
     "cord_slot_y": 84.0,
     "cord_slot": 12.0,
-    "cord_chan": 12.0,
-    "win_ring_r": 33.5,
-    "win_cuff_x": 14.5
+    "cord_chan": 10.0,
+    "win_ring_r": 37.0,
+    "win_cuff_x": 14.5,
+    "ring_snap": 0.35,
+    "slit": 3.0,
+    "slit_pitch": 8.0,
+    "spacer_w": 13.0
   },
   "Yr": 41.0,
   "Yc": 117.5,
-  "deck_Z": 14.2,
-  "ring_floor_Z": 9.45,
+  "deck_Z": 10.0,
+  "ring_floor_Z": 0.45,
   "cuff_floor_Z": 0.45,
   "front_Z": 23.45,
-  "ring_front_gap": 0.55,
+  "ring_front_gap": 9.55,
   "cuff_front_gap": 0.55,
+  "n_slits": 22,
   "outer_mm": [
     89.9,
     139.9,
     24.9
   ],
   "ring_hole_bounds": [
-    -36.25,
-    4.75,
-    36.25,
-    77.18
+    -35.65,
+    5.35,
+    35.65,
+    76.58
   ],
   "cuff_hole_bounds": [
     -16.75,
@@ -56,33 +62,24 @@
     129.25
   ],
   "window_bounds": [
-    -33.5,
-    7.5,
-    33.5,
+    -37.0,
+    4.0,
+    37.0,
     130.5
   ],
-  "insert_panels": {
-    "Klebelasche": 10.0,
-    "Manschettenboden": 45.0,
-    "Stufe": 9.0,
-    "Ringboden": 91.0,
-    "Wand unten": 4.75,
-    "Deck": 136.0,
-    "Wand oben": 13.75
-  },
   "cord_store_mm": [
     88.0,
-    91.0,
-    8.55
+    20.0,
+    9.1
   ],
   "blank_sizes_mm": {
     "Umverpackung": [
       240.8,
-      259.3
+      245.3
     ],
     "Einleger": [
-      114.6,
-      309.5
+      201.1,
+      136.0
     ]
   }
 }

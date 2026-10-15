@@ -1,23 +1,33 @@
 # Türzwerg – Verpackung
 
 Faltschachtel (außen ca. 90 × 140 × 25 mm) mit klappbarem, doppellagigem Euroloch-Hänger
-über die volle Breite und einem Einleger mit gestuftem Boden.
+über die volle Breite. Zwei Varianten für den Einleger:
 
-## Dateien (`out/`)
+| | A · Gleiche Front | B · Gleicher Boden |
+|---|---|---|
+| Ring → Front | 0,55 mm | 9,55 mm |
+| Manschette → Front | 0,55 mm | 0,55 mm |
+| Einleger | Streifen, 6 Querfalze, 115 × 310 mm (12×24″-Matte) | Rohr, 4 Längsfalze, 201 × 136 mm (A4) |
+| Ring | eingelegt, Fensterrand hält ihn | rastet im Deck ein (Haltezungen) |
+| Restschnur | Fach unter dem Ringboden | Fach unter dem Deck hinter dem Sichtfeld |
+
+Erzeugen: `python generate.py A`, `python generate.py B`, dann `python build_viewer.py`.
+Dateien je Variante in `out/variante_A/` bzw. `out/variante_B/`, der Viewer in `out/viewer.html`.
+
+## Dateien (`out/variante_X/`)
 
 | Datei | Zweck |
 |---|---|
 | `Umverpackung_komplett.dxf`, `Einleger_komplett.dxf` | Plotdatei, Ebenen SCHNEIDEN (rot) + RILLEN (blau) |
 | `*_schneiden.dxf`, `*_rillen.dxf` | dieselben Linien getrennt (falls Studio die Farben verliert) |
 | `Umverpackung.svg`, `Einleger.svg` | für Silhouette Studio Designer Edition |
-| `viewer.html` | 3D-Ansicht, Längsschnitt, Zuschnitte, Bestücken |
 | `Tuerzwerg_Verpackung.step` / `.glb` | 3D-Gesamtmodell |
 | `masse.json` | alle berechneten Maße |
 
 Die Zuschnitte zeigen die Außenseite (Druckseite).
-Umverpackung: 241 × 259 mm → 12×12″-Matte. Einleger: 115 × 310 mm → 12×24″-Matte.
+Umverpackung: 241 × 245 mm → 12×12″-Matte.
 
-## Einleger
+## Einleger Variante A
 
 Ein Streifen, alle Falze quer: Wand oben · Deck (mit Seitenflanschen) · Wand unten · Ringboden ·
 Stufe · Manschettenboden · Klebelasche.
@@ -31,7 +41,7 @@ Stufe · Manschettenboden · Klebelasche.
 
 ## Hänger
 
-Volle Breite, doppellagig, Falz an der Oberkante der Rückwand. Für den Versand flach nach
+Volle Breite, 28 mm hoch, doppellagig, Falz an der Oberkante der Rückwand. Für den Versand flach nach
 hinten geklappt. Aufgestellt wird die Zunge der Doppelung in den Schlitz im oberen Deckel
 gesteckt; ihre Schultern rasten ein und halten den Hänger senkrecht.
 
@@ -41,5 +51,5 @@ Alle Maße stehen oben in `generate.py` (`P = dict(...)`). Danach neu erzeugen:
 
 ```bash
 pip install cadquery shapely ezdxf trimesh
-python generate.py && python build_viewer.py
+python generate.py A && python generate.py B && python build_viewer.py
 ```
