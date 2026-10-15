@@ -19,7 +19,7 @@ def vdir(v):
 
 
 def svg_inline(v, name):
-    s = open(os.path.join(vdir(v), f"{name}.svg")).read()
+    s = open(os.path.join(vdir(v), "plot", name + ".svg")).read()
     return re.sub(r'width="[^"]+mm" height="[^"]+mm"', f'class="blank" role="img" aria-label="Zuschnitt {name}"', s, count=1)
 
 
@@ -75,8 +75,8 @@ def section_svg(m):
 
 def dl(m):
     pr, o = m["params"], m["outer_mm"]
-    bw, bh = m["blank_sizes_mm"]["Umverpackung"]
-    iw, ih = m["blank_sizes_mm"]["Einleger"]
+    bw, bh = m["blank_sizes_mm"]["12x12/Umverpackung"]
+    iw, ih = m["blank_sizes_mm"]["12x12/Einleger_2teilig"]
     rows = [
         ("Karton außen (B×H×T)", f"{de(o[0], 0)} × {de(o[1], 0)} × {de(o[2])} mm"),
         ("Hänger, klappt nach vorn", f"+{pr['hang_h']:.0f} mm"),
@@ -85,8 +85,8 @@ def dl(m):
         ("Deck über Rückwand", f"{de(m['deck_Z'])} mm"),
         ("Schnurfach", "{} × {} × {} mm".format(*[de(x, 0 if i < 2 else 1) for i, x in enumerate(m["cord_store_mm"])])),
         ("Zuschnitt Umverpackung", f"{bw:.0f} × {bh:.0f} mm"),
-        ("Zuschnitt Einleger", f"{iw:.0f} × {ih:.0f} mm"),
-        ("Matte Einleger", "12×24″" if max(iw, ih) > 290 else "12×12″ / A4"),
+        ("Zuschnitt Einleger, 2-teilig", f"{iw:.0f} × {ih:.0f} mm"),
+        ("Matte", "12×12″ für beide Teile"),
         ("Ringmitte = Manschettenachse", f"{de(m['ring_center_Z'], 2)} mm"),
         ("Manschettenfenster", "{} × {} mm".format(*[de(x, 0) for x in m["cuff_window_mm"]])),
         ("Rand oben = unten", f"{de(m['margin_top_bottom'])} mm"),
@@ -122,8 +122,8 @@ STEPS = {
 
 
 def variant_blocks(v, m):
-    bw, bh = m["blank_sizes_mm"]["Umverpackung"]
-    iw, ih = m["blank_sizes_mm"]["Einleger"]
+    bw, bh = m["blank_sizes_mm"]["12x12/Umverpackung"]
+    iw, ih = m["blank_sizes_mm"]["12x12/Einleger_2teilig"]
     hidden = ""
     return dict(
         dl=f'<div data-v="{v}"{hidden}>{dl(m)}</div>',
@@ -131,8 +131,8 @@ def variant_blocks(v, m):
         how=f'<div class="two" data-v="{v}"{hidden}>{HOW[v]}</div>',
         steps=f'<ol class="steps" data-v="{v}"{hidden}>{STEPS[v]}</ol>',
         blanks=f'''<div class="blanks" data-v="{v}"{hidden}>
-<figure><div class="paper">{svg_inline(v, "Umverpackung")}</div><figcaption>Umverpackung, {bw:.0f} × {bh:.0f} mm, 12×12″-Matte. Links oben: Hänger mit Doppelung, die Doppelung wird innen (zur Front hin) verklebt.</figcaption></figure>
-<figure><div class="paper">{svg_inline(v, "Einleger")}</div><figcaption>Einleger, {iw:.0f} × {ih:.0f} mm, 12×24″-Matte. Von links: Deck mit Seitenflanschen (klappen nach vorn), Wand unten, Ringboden mit 4 Füßen, Stufe, Schnurboden mit Kreuzschlitz, Stufe, Manschettenboden, Klebelasche. Oben: Wand oben.</figcaption></figure></div>''',
+<figure><div class="paper">{svg_inline(v, "12x12/Umverpackung_komplett")}</div><figcaption>Matte 12×12″: Umverpackung, {bw:.1f} × {bh:.1f} mm. Links oben der Hänger mit Doppelung, die innen (zur Front hin) verklebt wird. Unten links das 30-mm-Kontrollquadrat, in den Ecken die Eckmarken.</figcaption></figure>
+<figure><div class="paper">{svg_inline(v, "12x12/Einleger_2teilig_komplett")}</div><figcaption>Matte 12×12″: Einleger zweiteilig, {iw:.1f} × {ih:.1f} mm. Links Teil A (Manschettenboden, Stufe, Schnurboden mit Kreuzschlitz, Stufe, Ringboden mit 4 Füßen, oben die Klebelasche an Teil B), rechts Teil B (Wand unten, Deck mit Seitenflanschen, Wand oben).</figcaption></figure></div>''',
     )
 
 
@@ -313,14 +313,13 @@ th{font-weight:600;color:var(--muted)}
     <div class="note">
       <h3>Dateien</h3>
       <div class="tw"><table>
-        <tr><th>Was</th><th>Datei</th><th>Größe</th><th>Matte</th></tr>
-        <tr><td>Umverpackung</td><td><code>Umverpackung_komplett.dxf</code></td><td>254,2 × 231,6</td><td>12×12″</td></tr>
-        <tr><td>Einleger, zweiteilig</td><td><code>Einleger_2teilig_komplett.dxf</code></td><td>217,1 × 213,0</td><td>12×12″</td></tr>
-        <tr><td>Einleger, einteilig</td><td><code>Einleger_komplett.dxf</code></td><td>112,0 × 372,6</td><td>12×24″</td></tr>
-        <tr><td>beides</td><td><code>Bogen_12x24_komplett.dxf</code></td><td>254,2 × 578,2</td><td>12×24″</td></tr>
+        <tr><th>Matte</th><th>Datei (ohne Rillwerkzeug)</th><th>Teil</th></tr>
+        <tr><td>12×12″</td><td><code>plot/12x12/Umverpackung_perforiert.dxf</code></td><td>254,2 × 231,6</td></tr>
+        <tr><td>12×12″</td><td><code>plot/12x12/Einleger_2teilig_perforiert.dxf</code></td><td>217,2 × 175,0</td></tr>
+        <tr><td>12×24″</td><td><code>plot/12x24/Einleger_einteilig_perforiert.dxf</code></td><td>112,1 × 334,6</td></tr>
+        <tr><td>12×24″</td><td><code>plot/12x24/Bogen_Karton_und_Einleger_perforiert.dxf</code></td><td>beides</td></tr>
       </table></div>
-      <p>Designer Edition: gleiche Namen als <code>.svg</code>. Gehen beim DXF-Import die Farben verloren: <code>*_schneiden.dxf</code> öffnen, <code>*_rillen.dxf</code> zusammenführen, beides oben links ausrichten (gleiche Passerwinkel), Winkel löschen.</p>
-      <p><b>Wichtig:</b> erst die Seite auf die richtige Matte einstellen, dann öffnen. Ist die Datei länger als die Seite, verkleinert Studio sie. Jede Datei enthält ein schwarzes Kontrollquadrat, das genau 30,0 mm messen muss; sonst proportional nachskalieren.</p>
+      <p>Jede Datei ist genau so groß wie die Matte (304,8 × 304,8 bzw. 304,8 × 609,6 mm), mit Eckmarken in den Ecken. Silhouette Studio kann sie deshalb nicht mehr falsch skalieren: öffnen, nichts verschieben, schneiden. Das schwarze Kontrollquadrat muss 30,0 mm messen. Mit Rillwerkzeug: <code>…_komplett.dxf</code> (rot schneiden, blau Berg, grün Tal). Designer Edition: gleiche Namen als <code>.svg</code>.</p>
     </div>
     <div class="note">
       <h3>Startwerte, 300–350 g/m² Karton (0,45 mm)</h3>

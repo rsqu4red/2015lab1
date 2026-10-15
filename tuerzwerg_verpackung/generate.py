@@ -444,48 +444,53 @@ def control_square(cut, sheet=None):
     return [list(sq.exterior.coords)]
 
 
-def write_files(name, cut, mountain, valley):
+MATS = {"12x12": (304.8, 304.8), "12x24": (304.8, 609.6)}
+MARGIN_MAT = 10.0
+
+
+def write_mat(name, mat, cut, mountain, valley):
+    """Plotdatei in Mattengröße: Eckmarken genau auf den Seitenecken (0/0 und Mattenbreite/-höhe).
+    Silhouette Studio passt DXF beim Öffnen an die Seite an -> Faktor ist dann immer 1,0
+    und das Teil liegt dort auf der Matte, wo es in der Datei liegt."""
+    PW, PH = MATS[mat]
     bb = bounds(cut + mountain + valley)
-    sq = control_square(cut)
-    bb = bounds(cut + mountain + valley + sq)
-    o = bb[:2]
-    save_dxf(os.path.join(OUT, f"{name}_komplett.dxf"),
+    w, h = bb[2] - bb[0], bb[3] - bb[1]
+    assert w <= PW - 2 * MARGIN_MAT + 1e-6 and h <= PH - 2 * MARGIN_MAT + 1e-6, (name, w, h)
+    dx = (PW - w) / 2 - bb[0]                       # waagerecht mittig
+    dy = PH - MARGIN_MAT - h - bb[1]                # 10 mm vom oberen Mattenrand
+    mv = lambda pls: [[(x + dx, y + dy) for x, y in pl] for pl in pls]
+    cut, mountain, valley = mv(cut), mv(mountain), mv(valley)
+    sq = control_square(cut, sheet=(MARGIN_MAT, MARGIN_MAT, PW - MARGIN_MAT, PH - MARGIN_MAT))
+    corners = [[(0, 2.0), (0, 0), (2.0, 0)], [(PW - 2.0, PH), (PW, PH), (PW, PH - 2.0)]]
+    page = (0, 0)
+    d = os.path.join(OUT, "plot", mat)
+    os.makedirs(d, exist_ok=True)
+    save_dxf(os.path.join(d, f"{name}_komplett.dxf"),
              [("SCHNEIDEN", 1, cut), ("RILLEN_BERG", 5, mountain), ("RILLEN_TAL", 3, valley),
-              ("KONTROLLE_30MM", 7, sq)], o)
-    save_dxf(os.path.join(OUT, f"{name}_schneiden.dxf"), [("SCHNEIDEN", 1, cut)], o, marks=bb)
-    save_dxf(os.path.join(OUT, f"{name}_rillen.dxf"), [("RILLEN_BERG", 5, mountain), ("RILLEN_TAL", 3, valley)], o, marks=bb)
-    save_svg(os.path.join(OUT, f"{name}.svg"), [cut, mountain, valley, sq], bb)
-    write_perforated(name, cut, mountain, valley, o, sq)
-    return bb[2] - bb[0], bb[3] - bb[1]
-
-
-def write_perforated(name, cut, mountain, valley, origin, sq):
-    """Alles rot, ein einziger Schneidauftrag. Falzlinien als Perforation."""
+              ("KONTROLLE_30MM", 7, sq), ("SEITENECKEN", 7, corners)], page)
     pb, pt = perforate(mountain, *PERF["berg"]), perforate(valley, *PERF["tal"])
-    save_dxf(os.path.join(OUT, f"{name}_perforiert.dxf"),
+    save_dxf(os.path.join(d, f"{name}_perforiert.dxf"),
              [("SCHNEIDEN", 1, cut), ("FALZ_BERG_PERFO", 1, pb), ("FALZ_TAL_PERFO", 1, pt),
-              ("KONTROLLE_30MM", 7, sq)], origin)
-    bb = bounds(cut + mountain + valley + sq)
-    save_svg(os.path.join(OUT, f"{name}_perforiert.svg"), [cut + pb + pt, [], [], sq], bb)
+              ("KONTROLLE_30MM", 7, sq), ("SEITENECKEN", 7, corners)], page)
+    full = (0, 0, PW, PH)
+    save_svg(os.path.join(d, f"{name}_komplett.svg"), [cut, mountain, valley, sq + corners], full, margin=0)
+    save_svg(os.path.join(d, f"{name}_perforiert.svg"), [cut + pb + pt, [], [], sq + corners], full, margin=0)
+    return round(w, 1), round(h, 1)
 
 
-def write_sheet(box_paths, ins_paths, gap=12.0):
-    """Beide Teile auf einem Bogen für die 12×24″-Matte (305 × 610 mm)."""
+def write_mats(box_paths, ins_paths, ins2_paths, gap=12.0):
+    sizes = {
+        "12x12/Umverpackung": write_mat("Umverpackung", "12x12", *box_paths),
+        "12x12/Einleger_2teilig": write_mat("Einleger_2teilig", "12x12", *ins2_paths),
+        "12x24/Einleger_einteilig": write_mat("Einleger_einteilig", "12x24", *ins_paths),
+    }
+    # Beide Teile (Karton + einteiliger Einleger) auf einer 12x24-Matte
     bb_b, bb_i = bounds(sum(box_paths, [])), bounds(sum(ins_paths, []))
-    def move(paths, bb, dx, dy):
-        return [[[(x - bb[0] + dx, y - bb[1] + dy) for x, y in pl] for pl in grp] for grp in paths]
-    hb = bb_b[3] - bb_b[1]
-    b = move(box_paths, bb_b, 0, 0)
-    i = move(ins_paths, bb_i, 0, hb + gap)
-    groups = [b[k] + i[k] for k in range(3)]
-    sq = control_square(groups[0])
-    bb = bounds(sum(groups, []) + sq)
-    save_dxf(os.path.join(OUT, "Bogen_12x24_komplett.dxf"),
-             [("SCHNEIDEN", 1, groups[0]), ("RILLEN_BERG", 5, groups[1]), ("RILLEN_TAL", 3, groups[2]),
-              ("KONTROLLE_30MM", 7, sq)], bb[:2])
-    save_svg(os.path.join(OUT, "Bogen_12x24.svg"), groups + [sq], bb)
-    write_perforated("Bogen_12x24", groups[0], groups[1], groups[2], bb[:2], sq)
-    return bb[2] - bb[0], bb[3] - bb[1]
+    mv = lambda paths, bb, dy: [[[(x - bb[0], y - bb[1] + dy) for x, y in pl] for pl in g] for g in paths]
+    b = mv(box_paths, bb_b, 0)
+    i = mv(ins_paths, bb_i, bb_b[3] - bb_b[1] + gap)
+    sizes["12x24/Bogen_Karton_und_Einleger"] = write_mat("Bogen_Karton_und_Einleger", "12x24", *[b[k] + i[k] for k in range(3)])
+    return sizes
 
 
 # --------------------------------------------------------------------------
@@ -627,10 +632,7 @@ def main():
     ins_full = insert_blank(deck_hole, slit_lines)
     ins_paths = blank_paths(ins_full)
     ins2_paths = blank_paths(insert_blank_2teilig(ins_full))
-    sizes = {"Umverpackung": write_files("Umverpackung", *box_paths),
-             "Einleger": write_files("Einleger", *ins_paths),
-             "Einleger_2teilig": write_files("Einleger_2teilig", *ins2_paths),
-             "Bogen_12x24": write_sheet(box_paths, ins_paths)}
+    sizes = write_mats(box_paths, ins_paths, ins2_paths)
     build_3d(ring, cuff, window, deck_hole)
 
     info = dict(params=P, Yr=Yr, Yc=Yc, Y_cord=Y_CORD, deck_Z=ZD, split_y1=YS1, split_y2=YS2,
@@ -644,7 +646,7 @@ def main():
                 insert_panels={k: round(L, 2) for k, L in insert_layout()},
                 cord_store_mm=[p["ins_w"], YS2 - YS1, round(Z_S - 2 * t, 2)],
                 n_slits=len(slit_lines),
-                blank_sizes_mm={k: [round(v, 1) for v in s] for k, s in sizes.items()})
+                blank_sizes_mm=sizes)
     with open(os.path.join(OUT, "masse.json"), "w") as f:
         json.dump(info, f, indent=2, ensure_ascii=False)
     print(json.dumps({k: v for k, v in info.items() if k != "params"}, indent=2, ensure_ascii=False))

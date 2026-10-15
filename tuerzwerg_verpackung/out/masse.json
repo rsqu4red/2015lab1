@@ -76,19 +76,19 @@
   ],
   "n_slits": 37,
   "blank_sizes_mm": {
-    "Umverpackung": [
+    "12x12/Umverpackung": [
       254.2,
       231.6
     ],
-    "Einleger": [
-      112.0,
-      372.6
-    ],
-    "Einleger_2teilig": [
+    "12x12/Einleger_2teilig": [
       217.1,
-      213.0
+      175.0
     ],
-    "Bogen_12x24": [
+    "12x24/Einleger_einteilig": [
+      112.0,
+      334.6
+    ],
+    "12x24/Bogen_Karton_und_Einleger": [
       254.2,
       578.2
     ]

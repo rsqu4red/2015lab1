@@ -5,23 +5,25 @@ der zum Versand 90° nach vorn auf den Deckel klappt, und einem Einleger, in dem
 Ringmitte und Manschettenachse auf gleicher Höhe liegen. Der Einleger wird von oben
 eingeschoben und sitzt nach hinten und vorn fest.
 
-## Dateien (`out/`)
+## Dateien
+
+Plotdateien in `out/plot/12x12/` und `out/plot/12x24/`. Jede Datei hat genau die Mattengröße
+(304,8 × 304,8 bzw. 304,8 × 609,6 mm, Eckmarken in den Ecken). Silhouette Studio skaliert sie
+deshalb beim Öffnen nicht, auch nicht mit „an Seite anpassen“.
 
 | Datei | Zweck |
 |---|---|
-| `Umverpackung_komplett.dxf`, `Einleger_komplett.dxf` | Plotdatei, Ebenen SCHNEIDEN (rot), RILLEN_BERG (blau), RILLEN_TAL (grün) |
-| `Einleger_2teilig_*.dxf` | Einleger in zwei Teilen, passt auf die 12×12″-Matte |
-| `Bogen_12x24_komplett.dxf` | beide Teile auf einem Bogen für die 12×24″-Matte |
-| `*_perforiert.dxf` / `.svg` | Falzlinien als Perforation (lang = Berg, kurz = Tal), alles rot – für Schneiden ohne Rillwerkzeug |
-| `*_schneiden.dxf`, `*_rillen.dxf` | dieselben Linien getrennt, mit Passerwinkeln (falls Studio die Farben verliert) |
-| `*.svg` | für Silhouette Studio Designer Edition |
-| `viewer.html` | 3D-Ansicht, Längsschnitt, Zuschnitte, Bestücken |
-| `Tuerzwerg_Verpackung.step` / `.glb` | 3D-Gesamtmodell |
-| `masse.json` | alle berechneten Maße |
+| `*_perforiert.dxf` / `.svg` | alles rot, Falzlinien als Perforation (lang = Berg, kurz = Tal) – ohne Rillwerkzeug |
+| `*_komplett.dxf` / `.svg` | rot schneiden, blau Bergfalz, grün Talfalz – mit Rillwerkzeug |
+| `12x12/Umverpackung_*` | Umverpackung 254,2 × 231,6 mm |
+| `12x12/Einleger_2teilig_*` | Einleger in zwei Teilen (217,2 × 175,0 mm) |
+| `12x24/Einleger_einteilig_*` | Einleger am Stück (112,1 × 334,6 mm) |
+| `12x24/Bogen_Karton_und_Einleger_*` | beides auf einer 12×24″-Matte |
+| `out/viewer.html` | 3D-Ansicht, Längsschnitt, Zuschnitte, Bestücken |
+| `out/Tuerzwerg_Verpackung.step` / `.glb` | 3D-Gesamtmodell |
+| `out/masse.json` | alle berechneten Maße |
 
-Die Zuschnitte zeigen die Außenseite (Druckseite). Plotten, Falten, Bestücken: siehe `ANLEITUNG_SILHOUETTE.md`.
-Umverpackung: 254 × 232 mm → 12×12″-Matte. Einleger zweiteilig: 217 × 213 mm → 12×12″-Matte, einteilig 112 × 373 mm → 12×24″-Matte.
-Jede Komplett-/Perforiert-Datei enthält ein 30-mm-Kontrollquadrat (schwarz) zum Prüfen der Importgröße.
+Schwarz: 30-mm-Kontrollquadrat und Eckmarken (im Abfall). Plotten, Falten, Bestücken: `ANLEITUNG_SILHOUETTE.md`.
 
 ## Kartonmaße und Versandkarton
 
