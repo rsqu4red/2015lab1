@@ -218,7 +218,7 @@ def box_blank(window):
     # Aufhänger: volle Breite, doppellagig, Falz an der Oberkante (klappt 90° nach vorn)
     cx = Wp / 2
     hang = rounded_rect(xB0, Hp - 10, xB1, Hp + hh, 5).intersection(box(xB0, Hp, xB1, Hp + hh))
-    scores.append([(xB0 + 0.5, Hp), (xB1 - 0.5, Hp)])
+    valleys = [[(xB0 + 0.5, Hp), (xB1 - 0.5, Hp)]]   # Hänger klappt nur zum Versand nach vorn
     yd0, yd1 = Hp + hh, Hp + 2 * hh - 1.0      # 1 mm kürzer: Platz für den Falz beim Umklappen
     dbl = rounded_rect(xB0 + 0.75, yd0, xB1 - 0.75, yd1 + 10, 5).intersection(box(xB0, yd0, xB1, yd1))
     scores.append([(xB0 + 0.75, yd0), (xB1 - 0.75, yd0)])
@@ -230,7 +230,7 @@ def box_blank(window):
         euro_hole(cx, Hp + hh + p["euro_from_top"], flip=True),
         affinity.translate(window, xF0 + Wp / 2, 0),
     ]
-    return dict(outline=outline, holes=holes, cuts=[], scores=scores)
+    return dict(outline=outline, holes=holes, cuts=[], scores=scores, valleys=valleys)
 
 
 # --------------------------------------------------------------------------
@@ -263,14 +263,15 @@ def insert_blank(deck_hole, slit_lines):
         pos[name] = (v, v + L)
         v += L
     u0, u1 = -W / 2, W / 2
-    parts, scores, cuts = [], [], []
+    parts, scores, valleys, cuts = [], [], [], []
     for name, (a, b) in pos.items():
         if name == "Klebelasche":
             parts.append(Polygon([(u0 + 5, a), (u1 - 5, a), (u1, b), (u0, b)]))
         else:
             parts.append(box(u0, a, u1, b))
     for name, (a, b) in list(pos.items())[1:]:
-        scores.append([(u0, a), (u1, a)])
+        # Schnurboden liegt höher als seine Nachbarn -> beide Falze daran sind Talfalze
+        (valleys if name in ("Schnurboden", "Stufe vorn") else scores).append([(u0, a), (u1, a)])
 
     # Deck: Y = v - vD0 ; Seitenflansche klappen nach vorn bis an die Front des Kartons
     vD0, vD1 = pos["Deck"]
@@ -279,7 +280,7 @@ def insert_blank(deck_hole, slit_lines):
         e = sgn * W / 2
         f = [(0, 1), (hF, 3), (hF, H - 3), (0, H - 1)]
         parts.append(Polygon([(e + sgn * h, vD0 + y) for h, y in f]))
-        scores.append([(e, vD0 + 1), (e, vD1 - 1)])
+        valleys.append([(e, vD0 + 1), (e, vD1 - 1)])
     hole = affinity.translate(deck_hole, 0, vD0)
     cuts += [[(a, b + vD0) for a, b in sl] for sl in slit_lines]
 
@@ -287,13 +288,13 @@ def insert_blank(deck_hole, slit_lines):
     vR0, vR1 = pos["Ringboden"]
     for x0, x1, yf, ye in legs():
         cuts.append([(x0, vR1 - yf), (x0, vR1 - ye), (x1, vR1 - ye), (x1, vR1 - yf)])
-        scores.append([(x0, vR1 - yf), (x1, vR1 - yf)])
+        valleys.append([(x0, vR1 - yf), (x1, vR1 - yf)])
     # Schnurboden: Y = YS1 + (vS1 - v) ; Kreuzschlitz für die Restschnur
     vS0, vS1 = pos["Schnurboden"]
     cuts += cross_slit(0, vS1 - (Y_CORD - YS1), p["cord_slot"])
 
     outline = unary_union([q.buffer(0.001) for q in parts]).buffer(-0.001)
-    return dict(outline=outline, holes=[hole], cuts=cuts, scores=scores)
+    return dict(outline=outline, holes=[hole], cuts=cuts, scores=scores, valleys=valleys)
 
 
 # --------------------------------------------------------------------------
@@ -316,45 +317,77 @@ def blank_paths(b):
     for h in b["holes"]:
         cut += list(geom_lines(h))
     cut += b.get("cuts", [])
-    return cut, b["scores"]
+    return cut, b["scores"], b.get("valleys", [])
 
 
-def write_files(name, cut, score, margin=8.0):
-    allpts = [pt for pl in cut + score for pt in pl]
-    minx = min(x for x, _ in allpts); maxx = max(x for x, _ in allpts)
-    miny = min(y for _, y in allpts); maxy = max(y for _, y in allpts)
-    W, H = maxx - minx + 2 * margin, maxy - miny + 2 * margin
-    tr = lambda x, y: (x - minx + margin, y - miny + margin)  # y nach oben (DXF)
+LAYERS = [("SCHNEIDEN", 1, "#e00000", None), ("RILLEN_BERG", 5, "#0050ff", "3,1.5"),
+          ("RILLEN_TAL", 3, "#00a040", "1,1.5")]
 
-    def dxf(fn, layers):
-        doc = ezdxf.new("R12")
-        msp = doc.modelspace()
-        for lname, col, pls in layers:
-            doc.layers.new(lname, dxfattribs={"color": col})
-            for pl in pls:
-                pts = [tr(*q) for q in pl]
-                closed = len(pts) > 2 and math.dist(pts[0], pts[-1]) < 1e-6
-                if closed:
-                    pts = pts[:-1]
-                msp.add_polyline2d(pts, close=closed, dxfattribs={"layer": lname, "color": col})
-        doc.saveas(fn)
 
-    dxf(os.path.join(OUT, f"{name}_komplett.dxf"), [("SCHNEIDEN", 1, cut), ("RILLEN", 5, score)])
-    dxf(os.path.join(OUT, f"{name}_schneiden.dxf"), [("SCHNEIDEN", 1, cut)])
-    dxf(os.path.join(OUT, f"{name}_rillen.dxf"), [("RILLEN", 5, score)])
+def bounds(paths):
+    pts = [q for pl in paths for q in pl]
+    return (min(x for x, _ in pts), min(y for _, y in pts), max(x for x, _ in pts), max(y for _, y in pts))
 
-    def path_d(pl):
-        pts = [tr(*q) for q in pl]
-        return "M" + " L".join(f"{x:.3f},{H - y:.3f}" for x, y in pts)
-    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W:.2f}mm" height="{H:.2f}mm" viewBox="0 0 {W:.2f} {H:.2f}">']
-    svg.append('<g id="SCHNEIDEN" fill="none" stroke="#e00000" stroke-width="0.25">')
-    svg += [f'<path d="{path_d(pl)}"/>' for pl in cut]
-    svg.append('</g><g id="RILLEN" fill="none" stroke="#0050ff" stroke-width="0.25" stroke-dasharray="2,1">')
-    svg += [f'<path d="{path_d(pl)}"/>' for pl in score]
-    svg.append("</g></svg>")
-    with open(os.path.join(OUT, f"{name}.svg"), "w") as f:
-        f.write("\n".join(svg))
-    return W, H
+
+def save_dxf(fn, layers, origin, marks=None):
+    """DXF R12 in mm. origin: wird auf (0,0) gelegt. marks: Passerecken (gleiche Hüllbox in allen Teildateien)."""
+    ox, oy = origin
+    doc = ezdxf.new("R12")
+    msp = doc.modelspace()
+    for lname, col, pls in layers:
+        doc.layers.new(lname, dxfattribs={"color": col})
+        for pl in pls:
+            pts = [(x - ox, y - oy) for x, y in pl]
+            closed = len(pts) > 2 and math.dist(pts[0], pts[-1]) < 1e-6
+            msp.add_polyline2d(pts[:-1] if closed else pts, close=closed, dxfattribs={"layer": lname, "color": col})
+    if marks:
+        doc.layers.new("PASSER", dxfattribs={"color": 7})
+        x0, y0, x1, y1 = marks
+        for pl in ([(x0 + 4, y0), (x0, y0), (x0, y0 + 4)], [(x1 - 4, y1), (x1, y1), (x1, y1 - 4)]):
+            msp.add_polyline2d([(x - ox, y - oy) for x, y in pl], dxfattribs={"layer": "PASSER", "color": 7})
+    doc.saveas(fn)
+
+
+def save_svg(fn, groups, bb, margin=8.0):
+    x0, y0, x1, y1 = bb
+    W, H = x1 - x0 + 2 * margin, y1 - y0 + 2 * margin
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W:.2f}mm" height="{H:.2f}mm" viewBox="0 0 {W:.2f} {H:.2f}">']
+    for (lname, _, color, dash), pls in zip(LAYERS, groups):
+        da = f' stroke-dasharray="{dash}"' if dash else ""
+        out.append(f'<g id="{lname}" fill="none" stroke="{color}" stroke-width="0.25"{da}>')
+        for pl in pls:
+            out.append('<path d="M' + " L".join(f"{x - x0 + margin:.3f},{H - (y - y0 + margin):.3f}" for x, y in pl) + '"/>')
+        out.append("</g>")
+    out.append("</svg>")
+    with open(fn, "w") as f:
+        f.write("\n".join(out))
+
+
+def write_files(name, cut, mountain, valley):
+    bb = bounds(cut + mountain + valley)
+    o = bb[:2]
+    save_dxf(os.path.join(OUT, f"{name}_komplett.dxf"),
+             [("SCHNEIDEN", 1, cut), ("RILLEN_BERG", 5, mountain), ("RILLEN_TAL", 3, valley)], o)
+    save_dxf(os.path.join(OUT, f"{name}_schneiden.dxf"), [("SCHNEIDEN", 1, cut)], o, marks=bb)
+    save_dxf(os.path.join(OUT, f"{name}_rillen.dxf"), [("RILLEN_BERG", 5, mountain), ("RILLEN_TAL", 3, valley)], o, marks=bb)
+    save_svg(os.path.join(OUT, f"{name}.svg"), [cut, mountain, valley], bb)
+    return bb[2] - bb[0], bb[3] - bb[1]
+
+
+def write_sheet(box_paths, ins_paths, gap=12.0):
+    """Beide Teile auf einem Bogen für die 12×24″-Matte (305 × 610 mm)."""
+    bb_b, bb_i = bounds(sum(box_paths, [])), bounds(sum(ins_paths, []))
+    def move(paths, bb, dx, dy):
+        return [[[(x - bb[0] + dx, y - bb[1] + dy) for x, y in pl] for pl in grp] for grp in paths]
+    hb = bb_b[3] - bb_b[1]
+    b = move(box_paths, bb_b, 0, 0)
+    i = move(ins_paths, bb_i, 0, hb + gap)
+    groups = [b[k] + i[k] for k in range(3)]
+    bb = bounds(sum(groups, []))
+    save_dxf(os.path.join(OUT, "Bogen_12x24_komplett.dxf"),
+             [("SCHNEIDEN", 1, groups[0]), ("RILLEN_BERG", 5, groups[1]), ("RILLEN_TAL", 3, groups[2])], bb[:2])
+    save_svg(os.path.join(OUT, "Bogen_12x24.svg"), groups, bb)
+    return bb[2] - bb[0], bb[3] - bb[1]
 
 
 # --------------------------------------------------------------------------
@@ -492,8 +525,11 @@ def main():
     ])
     window = window.buffer(2, resolution=16).buffer(-2, resolution=16)   # Übergänge zum Kanal ausrunden
 
-    sizes = {"Umverpackung": write_files("Umverpackung", *blank_paths(box_blank(window))),
-             "Einleger": write_files("Einleger", *blank_paths(insert_blank(deck_hole, slit_lines)))}
+    box_paths = blank_paths(box_blank(window))
+    ins_paths = blank_paths(insert_blank(deck_hole, slit_lines))
+    sizes = {"Umverpackung": write_files("Umverpackung", *box_paths),
+             "Einleger": write_files("Einleger", *ins_paths),
+             "Bogen_12x24": write_sheet(box_paths, ins_paths)}
     build_3d(ring, cuff, window, deck_hole)
 
     info = dict(params=P, Yr=Yr, Yc=Yc, Y_cord=Y_CORD, deck_Z=ZD, split_y1=YS1, split_y2=YS2,
@@ -507,7 +543,7 @@ def main():
                 insert_panels={k: round(L, 2) for k, L in insert_layout()},
                 cord_store_mm=[p["ins_w"], YS2 - YS1, round(Z_S - 2 * t, 2)],
                 n_slits=len(slit_lines),
-                blank_sizes_mm={k: [round(v - 16, 1) for v in s] for k, s in sizes.items()})
+                blank_sizes_mm={k: [round(v, 1) for v in s] for k, s in sizes.items()})
     with open(os.path.join(OUT, "masse.json"), "w") as f:
         json.dump(info, f, indent=2, ensure_ascii=False)
     print(json.dumps({k: v for k, v in info.items() if k != "params"}, indent=2, ensure_ascii=False))

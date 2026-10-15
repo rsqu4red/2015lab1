@@ -160,7 +160,7 @@ TEMPLATE = r"""<title>Türzwerg Verpackung</title>
 /* Layout: technisches Datenblatt – große 3D-Bühne links, Maße/Bedienung rechts, darunter Schnitt, Erklärung, Ablauf, Zuschnitte */
 :root{
   --bg:#eef0ea; --panel:#ffffff; --fg:#1d2420; --muted:#5d6760; --line:#d3d8cf;
-  --kraft:#b58a52; --neon:#c6ec00; --part:#a9c400; --cordc:#9c2a20; --cut:#d40000; --score:#0050ff;
+  --kraft:#b58a52; --neon:#c6ec00; --part:#a9c400; --cordc:#9c2a20; --cut:#d40000; --score:#0050ff; --valley:#00a040;
   --stage:#e3e6de; --paper:#ffffff;
   --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
   --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
@@ -223,6 +223,7 @@ figcaption{font-size:13px;color:var(--muted)}
 .legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;margin-bottom:12px}
 .legend i{display:inline-block;width:26px;height:0;border-top:2px solid var(--cut);vertical-align:middle;margin-right:6px}
 .legend i.s{border-top:2px dashed var(--score)}
+.legend i.v{border-top:2px dotted var(--valley)}
 ol.steps{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
 ol.steps li{counter-increment:s;background:var(--panel);border:1px solid var(--line);padding:12px 14px;min-width:0}
 ol.steps li::before{content:counter(s);font:700 24px var(--f-display);color:var(--kraft);display:block;line-height:1}
@@ -302,30 +303,33 @@ th{font-weight:600;color:var(--muted)}
 
 <section aria-labelledby="h-plot">
   <h2 id="h-plot">Zuschnitte für den Silhouette Cameo 4</h2>
-  <div class="legend"><span><i></i>Schneiden</span><span><i class="s"></i>Rillen / Falzen</span><span>Ansicht: Außenseite (Druckseite) oben</span></div>
+  <div class="legend"><span><i></i>Schneiden</span><span><i class="s"></i>Bergfalz (Druckseite außen)</span><span><i class="v"></i>Talfalz (Druckseite innen)</span><span>Ansicht: Außenseite (Druckseite) oben</span></div>
   %%BLANKS%%
 </section>
 
 <section aria-labelledby="h-sil">
-  <h2 id="h-sil">Einstellungen Silhouette Studio</h2>
+  <h2 id="h-sil">Silhouette Studio und Cameo 4</h2>
   <div class="two">
     <div class="note">
       <h3>Dateien</h3>
-      <ul>
-        <li><code>*_komplett.dxf</code>: Schneiden (rot) und Rillen (blau) zusammen. In Studio unter „Schneiden“ → „Linienfarbe“ getrennt einstellen.</li>
-        <li><code>*_schneiden.dxf</code> / <code>*_rillen.dxf</code>: getrennt, falls die Farben beim DXF-Import verloren gehen. Beide an Position 0/0 importieren.</li>
-        <li><code>*.svg</code>: für die Designer Edition, Maßstab in mm.</li>
-        <li>Nach dem Import die Breite prüfen: Umverpackung 254 mm.</li>
-      </ul>
+      <div class="tw"><table>
+        <tr><th>Was</th><th>Datei</th><th>Größe</th><th>Matte</th></tr>
+        <tr><td>Umverpackung</td><td><code>Umverpackung_komplett.dxf</code></td><td>254,2 × 231,6</td><td>12×12″</td></tr>
+        <tr><td>Einleger</td><td><code>Einleger_komplett.dxf</code></td><td>112,0 × 334,6</td><td>12×24″</td></tr>
+        <tr><td>beides</td><td><code>Bogen_12x24_komplett.dxf</code></td><td>254,2 × 578,2</td><td>12×24″</td></tr>
+      </table></div>
+      <p>Designer Edition: gleiche Namen als <code>.svg</code>. Gehen beim DXF-Import die Farben verloren: <code>*_schneiden.dxf</code> öffnen, <code>*_rillen.dxf</code> zusammenführen, beides oben links ausrichten (gleiche Passerwinkel), Winkel löschen.</p>
+      <p>Nach dem Import die Breite prüfen und bei Abweichung proportional auf das Tabellenmaß skalieren.</p>
     </div>
     <div class="note">
-      <h3>Startwerte für 300–350 g/m² Karton</h3>
+      <h3>Startwerte, 300–350 g/m² Karton (0,45 mm)</h3>
       <div class="tw"><table>
-        <tr><th>Linie</th><th>Werkzeug</th><th>Klinge</th><th>Kraft</th><th>Tempo</th><th>Durchgänge</th></tr>
-        <tr><td>Schneiden</td><td>AutoBlade</td><td>8–10</td><td>30–33</td><td>3</td><td>2</td></tr>
-        <tr><td>Rillen</td><td>AutoBlade</td><td>1–2</td><td>10–15</td><td>3</td><td>1</td></tr>
+        <tr><th>Farbe</th><th>Werkzeug</th><th>Klinge</th><th>Kraft</th><th>Tempo</th><th>Durchg.</th></tr>
+        <tr><td>Rot · Schneiden</td><td>1 · AutoBlade</td><td>8</td><td>30</td><td>3</td><td>2</td></tr>
+        <tr><td>Blau/Grün · Rillen</td><td>2 · Prägewerkzeug</td><td>–</td><td>20</td><td>3</td><td>1</td></tr>
+        <tr><td>Blau/Grün · ohne Prägewerkzeug</td><td>1 · AutoBlade, nur anritzen</td><td>1</td><td>10</td><td>3</td><td>1</td></tr>
       </table></div>
-      <p>Erst einen Teststreifen schneiden. Leicht angeritzte Rilllinien von der Ritzung weg falzen.</p>
+      <p>Erst einen Testschnitt machen. Erst rillen, dann schneiden; notfalls als zwei Aufträge, ohne die Matte zu entladen. Den Karton mit der Druckseite nach oben auf die StandardGrip-Matte legen. Ausführliche Anleitung: <code>ANLEITUNG_SILHOUETTE.md</code>.</p>
     </div>
   </div>
 </section>

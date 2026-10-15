@@ -9,14 +9,15 @@ eingeschoben und sitzt nach hinten und vorn fest.
 
 | Datei | Zweck |
 |---|---|
-| `Umverpackung_komplett.dxf`, `Einleger_komplett.dxf` | Plotdatei, Ebenen SCHNEIDEN (rot) + RILLEN (blau) |
-| `*_schneiden.dxf`, `*_rillen.dxf` | dieselben Linien getrennt (falls Studio die Farben verliert) |
-| `Umverpackung.svg`, `Einleger.svg` | für Silhouette Studio Designer Edition |
+| `Umverpackung_komplett.dxf`, `Einleger_komplett.dxf` | Plotdatei, Ebenen SCHNEIDEN (rot), RILLEN_BERG (blau), RILLEN_TAL (grün) |
+| `Bogen_12x24_komplett.dxf` | beide Teile auf einem Bogen für die 12×24″-Matte |
+| `*_schneiden.dxf`, `*_rillen.dxf` | dieselben Linien getrennt, mit Passerwinkeln (falls Studio die Farben verliert) |
+| `*.svg` | für Silhouette Studio Designer Edition |
 | `viewer.html` | 3D-Ansicht, Längsschnitt, Zuschnitte, Bestücken |
 | `Tuerzwerg_Verpackung.step` / `.glb` | 3D-Gesamtmodell |
 | `masse.json` | alle berechneten Maße |
 
-Die Zuschnitte zeigen die Außenseite (Druckseite).
+Die Zuschnitte zeigen die Außenseite (Druckseite). Plotten, Falten, Bestücken: siehe `ANLEITUNG_SILHOUETTE.md`.
 Umverpackung: 254 × 232 mm → 12×12″-Matte. Einleger: 112 × 335 mm → 12×24″-Matte.
 
 ## Kartonmaße und Versandkarton
