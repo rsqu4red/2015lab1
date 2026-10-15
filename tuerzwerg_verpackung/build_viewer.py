@@ -1,4 +1,4 @@
-"""Baut out/viewer.html: Variantenvergleich A/B mit 3D-Ansicht, Längsschnitt, Zuschnitten, Ablauf."""
+"""Baut out/viewer.html: 3D-Ansicht, Längsschnitt, Zuschnitte, Ablauf (alles eingebettet)."""
 import base64
 import json
 import os
@@ -7,8 +7,7 @@ import re
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "out")
 THREE = "https://cdn.jsdelivr.net/npm/three@0.147.0"
-VARIANTS = ("A", "B")
-TITLE = {"A": "Gleiche Front", "B": "Gleicher Boden"}
+VARIANTS = ("C",)
 
 
 def de(x, n=1):
@@ -16,61 +15,55 @@ def de(x, n=1):
 
 
 def vdir(v):
-    return os.path.join(OUT, f"variante_{v}")
+    return OUT
 
 
 def svg_inline(v, name):
     s = open(os.path.join(vdir(v), f"{name}.svg")).read()
-    return re.sub(r'width="[^"]+mm" height="[^"]+mm"', f'class="blank" role="img" aria-label="Zuschnitt {name} Variante {v}"', s, count=1)
+    return re.sub(r'width="[^"]+mm" height="[^"]+mm"', f'class="blank" role="img" aria-label="Zuschnitt {name}"', s, count=1)
 
 
 def section_svg(m):
     """Maßstäblicher Längsschnitt (Kartonmitte), Y nach rechts, Z nach oben."""
-    v, pr = m["variant"], m["params"]
+    pr = m["params"]
     S = 3.6
     Hi, Di, t = pr["Hi"], pr["Di"], pr["t"]
-    H, Ys, ZD = pr["ins_h"], pr["split_y"], m["deck_Z"]
-    ZR, ZC, Yr, Yc = m["ring_floor_Z"], m["cuff_floor_Z"], m["Yr"], m["Yc"]
+    H, ZD = pr["ins_h"], m["deck_Z"]
+    Y1, Y2 = pr["split_y1"], pr["split_y2"]
+    ZR, ZS, ZC, Yr, Yc, ym = m["ring_floor_Z"], m["cord_floor_Z"], m["cuff_floor_Z"], m["Yr"], m["Yc"], m["Y_cord"]
+    zc = m["cuff_axis_Z"]
     padL, padT = 14, 22
     X = lambda y: padL + y * S
     Y = lambda z: padT + (Di - z) * S
     W, Hh = X(Hi) + 14, Y(0) + 52
-    o = [f'<svg viewBox="0 0 {W:.0f} {Hh:.0f}" class="sect" role="img" aria-label="Längsschnitt Variante {v}">']
+    o = [f'<svg viewBox="0 0 {W:.0f} {Hh:.0f}" class="sect" role="img" aria-label="Längsschnitt durch Karton und Einleger">']
     wb = m["window_bounds"]
     o.append(f'<path class="box" d="M{X(0)},{Y(0)} L{X(Hi)},{Y(0)} M{X(0)},{Y(0)} L{X(0)},{Y(Di)} M{X(Hi)},{Y(0)} L{X(Hi)},{Y(Di)}'
              f' M{X(0)},{Y(Di)} L{X(wb[1])},{Y(Di)} M{X(wb[3])},{Y(Di)} L{X(Hi)},{Y(Di)}"/>')
-    if v == "A":
-        pts = [(0.3, ZD), (0.3, ZR - t / 2), (Ys, ZR - t / 2), (Ys, ZC - t / 2), (H, ZC - t / 2), (H, ZD)]
-    else:
-        pts = [(0.3, ZC - t / 2), (H, ZC - t / 2)]
+    pts = [(0.3, ZD), (0.3, ZR - t / 2), (Y1, ZR - t / 2), (Y1, ZS - t / 2), (Y2, ZS - t / 2), (Y2, ZC - t / 2), (H, ZC - t / 2), (H, ZD)]
     o.append('<path class="ins" d="M' + " L".join(f"{X(y):.1f},{Y(z):.1f}" for y, z in pts) + '"/>')
     o.append(f'<path class="ins deck" d="M{X(0.3):.1f},{Y(ZD):.1f} L{X(H):.1f},{Y(ZD):.1f}"/>')
+    for yy in (Yr - 21, Yr + 21):   # Füße
+        o.append(f'<path class="ins" d="M{X(yy):.1f},{Y(ZR - t):.1f} L{X(yy):.1f},{Y(0):.1f}"/>')
     for y0, y1 in ((pr["ring_bottom"], pr["ring_bottom"] + 11.5), (Yr + 36 - 11.5, Yr + 36)):
         o.append(f'<rect class="part" x="{X(y0):.1f}" y="{Y(ZR + 14):.1f}" width="{(y1 - y0) * S:.1f}" height="{14 * S:.1f}" rx="{5 * S:.1f}"/>')
-    zc = ZC + 11.5
     o.append(f'<path class="part" d="M{X(Yc - 20.5):.1f},{Y(zc):.1f} L{X(Yc - 6):.1f},{Y(zc + 8):.1f} L{X(Yc - 6):.1f},{Y(zc - 8):.1f} Z"/>')
     o.append(f'<circle class="part" cx="{X(Yc):.1f}" cy="{Y(zc):.1f}" r="{11.5 * S:.1f}"/>')
     o.append(f'<circle class="hollow" cx="{X(Yc):.1f}" cy="{Y(zc):.1f}" r="{9 * S:.1f}"/>')
-    if v == "A":
-        ys = pr["cord_slot_y"]
-        o.append(f'<path class="cord" d="M{X(Yc - 20.5):.1f},{Y(zc):.1f} Q{X(ys + 3):.1f},{Y(ZR + 2):.1f} {X(ys):.1f},{Y(ZR - 3):.1f}'
-                 f' Q{X(ys - 8):.1f},{Y(2.5):.1f} {X(55):.1f},{Y(2.6):.1f} L{X(20):.1f},{Y(2.6):.1f} Q{X(10):.1f},{Y(4.6):.1f} {X(20):.1f},{Y(6.6):.1f}'
-                 f' L{X(60):.1f},{Y(6.6):.1f} Q{X(ys - 3):.1f},{Y(7):.1f} {X(ys - 1):.1f},{Y(ZR + 1):.1f} L{X(Yr + 34):.1f},{Y(ZR + 7):.1f}"/>')
-        store_lab, store_x = "Ringboden + Schnurfach darunter", Yr
-    else:
-        ym = (Yr + 36 + Yc - 20.5) / 2
-        o.append(f'<path class="cord" d="M{X(Yc - 20.5):.1f},{Y(zc):.1f} L{X(Yc - 22):.1f},{Y(ZD + 2):.1f} L{X(ym + 2):.1f},{Y(ZD + 2):.1f} L{X(ym):.1f},{Y(ZD - 2):.1f}'
-                 f' L{X(ym + 4):.1f},{Y(6.4):.1f} L{X(ym + 4):.1f},{Y(2.6):.1f} L{X(ym - 4):.1f},{Y(2.6):.1f} L{X(ym - 4):.1f},{Y(6.4):.1f} L{X(ym):.1f},{Y(ZD - 2):.1f}'
-                 f' L{X(ym - 2):.1f},{Y(ZD + 2):.1f} L{X(Yr + 36.5):.1f},{Y(ZD + 2):.1f} L{X(Yr + 34):.1f},{Y(ZR + 7):.1f}"/>')
-        store_lab, store_x = "Schnurfach hinter dem Sichtfeld", ym
+    o.append(f'<path class="axis" d="M{X(2):.1f},{Y(zc):.1f} L{X(Hi - 2):.1f},{Y(zc):.1f}"/>')
+    o.append(f'<path class="cord" d="M{X(Yc - 20.5):.1f},{Y(zc):.1f} L{X(ym + 2):.1f},{Y(zc):.1f} L{X(ym):.1f},{Y(ZS - 2):.1f}'
+             f' L{X(ym + 5):.1f},{Y(6.4):.1f} L{X(ym + 5):.1f},{Y(2.6):.1f} L{X(ym - 5):.1f},{Y(2.6):.1f} L{X(ym - 5):.1f},{Y(6.4):.1f} L{X(ym):.1f},{Y(ZS - 2):.1f}'
+             f' L{X(ym - 2):.1f},{Y(zc):.1f} L{X(Yr + 34):.1f},{Y(zc):.1f}"/>')
     def lab(x, y, txt, anchor="middle", cls="lab"):
         o.append(f'<text class="{cls}" x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}">{txt}</text>')
     lab(X(Yr), Y(Di) - 8, f'{de(m["ring_front_gap"], 2)} mm bis zur Front')
     lab(X(Yc), Y(Di) - 8, f'{de(m["cuff_front_gap"], 2)} mm bis zur Front')
-    lab(X(store_x), Y(0) + 16, store_lab)
-    lab(X(Yc), Y(0) + 16, "Manschettenboden" if v == "A" else "gemeinsamer Boden")
-    lab(X(pr["cord_slot_y"] if v == "A" else (Yr + 36 + Yc - 20.5) / 2), Y(0) + 30, "Kreuzschlitz", cls="lab small")
+    lab(X(Yr), Y(0) + 16, "Ringboden auf Füßen")
+    lab(X(ym), Y(0) + 16, "Schnurfach")
+    lab(X(Yc), Y(0) + 16, "Manschettenboden")
+    lab(X(ym), Y(0) + 30, "Kreuzschlitz", cls="lab small")
     lab(X(Hi) - 4, Y(ZD) - 3, "Deck", anchor="end", cls="lab small")
+    lab(X(Hi) - 4, Y(zc) + 10, f"Mitte {de(zc, 2)} mm", anchor="end", cls="lab small")
     lab(X(0), Y(0) + 44, "unten", anchor="start", cls="lab small")
     lab(X(Hi), Y(0) + 44, "oben (Hänger)", anchor="end", cls="lab small")
     o.append("</svg>")
@@ -83,7 +76,7 @@ def dl(m):
     iw, ih = m["blank_sizes_mm"]["Einleger"]
     rows = [
         ("Karton außen (B×H×T)", f"{o[0]:.0f} × {o[1]:.0f} × {o[2]:.0f} mm"),
-        ("Hänger, klappbar", f"+{pr['hang_h']:.0f} mm"),
+        ("Hänger, klappt nach vorn", f"+{pr['hang_h']:.0f} mm"),
         ("Ring → Front", f"{de(m['ring_front_gap'], 2)} mm"),
         ("Manschette → Front", f"{de(m['cuff_front_gap'], 2)} mm"),
         ("Deck über Rückwand", f"{de(m['deck_Z'])} mm"),
@@ -91,53 +84,42 @@ def dl(m):
         ("Zuschnitt Umverpackung", f"{bw:.0f} × {bh:.0f} mm"),
         ("Zuschnitt Einleger", f"{iw:.0f} × {ih:.0f} mm"),
         ("Matte Einleger", "12×24″" if max(iw, ih) > 290 else "12×12″ / A4"),
+        ("Ringmitte = Manschettenachse", f"{de(m['ring_center_Z'], 2)} mm"),
     ]
     return "<dl>" + "".join(f"<dt>{a}</dt><dd>{b}</dd>" for a, b in rows) + "</dl>"
 
 
 HOW = {
-    "A": """<div class="note"><h3>Gleiche Front</h3>
-<p>Zwei Böden: Die Manschette liegt direkt auf der Rückwand, der Ring auf einem 9 mm höheren Boden. Beide Vorderseiten liegen in einer Ebene, 0,55 mm hinter der Front. Man kann beide gleich gut anfassen.</p>
-<p>Die Stufe sieht man von vorn nicht. Sichtbar sind das Deck (eine Ebene) und durch die Ringmitte der Ringboden.</p>
-<p>Die Teile werden nur eingelegt. Nach vorn halten sie die Fensterränder.</p></div>
+    "C": """<div class="note"><h3>Mitte auf Mitte</h3>
+<p>Die Mitte des Rings liegt auf derselben Höhe wie die Achse der Manschette (11,95 mm über der Rückwand). Damit liegen beide Schnurbohrungen auf einer Linie und die Schnur läuft gerade.</p>
+<p>Die Manschette liegt auf dem Boden an der Rückwand und reicht bis 0,55 mm an die Front. Der Ring liegt auf einem Boden 4,5 mm höher, der auf vier Füßen steht. Er sitzt 5 mm hinter der Front, statt 9,5 mm wie bei gleichem Boden.</p>
+<p>Das Deck liegt auf 14,7 mm, knapp über der breitesten Stelle beider Teile. Der Ring rastet ein (Loch 0,35 mm kleiner, kurze Zungen). Die Manschette wird eingelegt, die Fensterränder an ihren Stirnseiten halten sie.</p></div>
 <div class="note"><h3>Schnur</h3>
-<p>Kreuzschlitz mittig im Sichtfeld, darunter ein Fach von 88 × 91 × 8,6 mm. Die Schnur verschwindet im Schlitz und kommt dort wieder heraus.</p>
-<p>Einleger: ein Streifen mit 6 Querfalzen und Seitenflanschen, 115 × 310 mm, braucht die 12×24″-Matte.</p></div>""",
-    "B": """<div class="note"><h3>Gleicher Boden</h3>
-<p>Ring und Manschette liegen auf demselben Boden. Die Manschette reicht bis 0,55 mm an die Front, der Ring sitzt 9,5 mm tiefer, weil er 9 mm dünner ist.</p>
-<p>Das Deck liegt auf 10 mm, knapp über der breitesten Stelle des Rings. Das Ringloch ist 0,35 mm kleiner als der Ring. Kurze Zungen geben beim Eindrücken nach, der Ring rastet ein. Die Manschette wird eingelegt, die Fensterränder an ihren Stirnseiten halten sie.</p>
-<p>Das Ringfenster ist hier größer als der Ring, er ist ganz zu sehen.</p></div>
-<div class="note"><h3>Schnur und Einleger</h3>
-<p>Beide Schnurstücke liegen auf dem Deck und treffen sich mittig an einem Kreuzschlitz. Dort wird die Restschnur als Schlaufe unter das Deck geschoben. Das Fach direkt hinter dem Sichtfeld misst 88 × 20 × 9 mm, die Schlaufen legen sich quer. Das Deck verdeckt sie.</p>
-<p>Einleger: ein einfaches Rohr mit 4 Längsfalzen, 201 × 136 mm, passt auf A4 und die 12×12″-Matte. Vier Abstandslaschen im Deck klappen nach vorn bis an die Front, damit der Einleger nicht nach vorn wandert.</p></div>""",
+<p>Im 20-mm-Sichtfeld liegt die Schnur gerade auf Höhe der Bohrungen über einem Schnurboden. Mittig darin ist ein Kreuzschlitz, durch den die Restschnur von rund 28 cm als Schlaufe ins Fach darunter geschoben wird. Das Fach misst 88 × 16 × 8,5 mm und läuft unter dem Ringboden flach weiter.</p>
+<p>Einleger: ein Streifen mit 8 Querfalzen, Seitenflanschen und 4 Füßen, 116 × 322 mm, braucht die 12×24″-Matte.</p></div>""",
 }
 
 STEPS = {
-    "A": """<li><b>Ring einlegen.</b> Einleger flach hinlegen, Ring mit Bohrung nach oben ins runde Loch legen.</li>
+    "C": """<li><b>Ring eindrücken.</b> Einleger flach hinlegen, Ring mit Bohrung nach oben ins runde Loch drücken, bis er einrastet.</li>
 <li><b>Manschette einlegen.</b> Mit Kiel zum Ring ins obere Loch.</li>
-<li><b>Schnur verstauen.</b> Mitte der Schnur als Schlaufe durch den Kreuzschlitz ins Schnurfach schieben, bis beide Stücke gerade sind.</li>
+<li><b>Schnur verstauen.</b> Mitte der Schnur als Schlaufe durch den Kreuzschlitz ins Schnurfach schieben, bis beide Stücke gerade liegen.</li>
 <li><b>Einschieben.</b> Karton mit der Front nach oben halten, Einleger von unten einschieben.</li>
-<li><b>Schließen.</b> Staublaschen einklappen, Bodendeckel einstecken.</li>""",
-    "B": """<li><b>Laschen aufstellen.</b> Die vier Abstandslaschen im Deck nach vorn hochklappen (einmalig beim Falten).</li>
-<li><b>Ring eindrücken.</b> Mit Bohrung nach oben ins runde Loch drücken, bis er einrastet.</li>
-<li><b>Manschette einlegen.</b> Mit Kiel zum Ring ins obere Loch.</li>
-<li><b>Schnur verstauen.</b> Mitte der Schnur als Schlaufe durch den Kreuzschlitz unter das Deck schieben, bis beide Stücke gerade auf dem Deck liegen.</li>
-<li><b>Einschieben und schließen.</b> Karton mit der Front nach oben, Einleger von unten einschieben, Bodendeckel einstecken.</li>""",
+<li><b>Schließen.</b> Staublaschen einklappen, Bodendeckel einstecken. Hänger für den Versand nach vorn auf den Deckel klappen.</li>""",
 }
 
 
 def variant_blocks(v, m):
     bw, bh = m["blank_sizes_mm"]["Umverpackung"]
     iw, ih = m["blank_sizes_mm"]["Einleger"]
-    hidden = "" if v == "B" else " hidden"
+    hidden = ""
     return dict(
         dl=f'<div data-v="{v}"{hidden}>{dl(m)}</div>',
         sect=f'<div class="sectwrap" data-v="{v}"{hidden}>{section_svg(m)}</div>',
         how=f'<div class="two" data-v="{v}"{hidden}>{HOW[v]}</div>',
         steps=f'<ol class="steps" data-v="{v}"{hidden}>{STEPS[v]}</ol>',
         blanks=f'''<div class="blanks" data-v="{v}"{hidden}>
-<figure><div class="paper">{svg_inline(v, "Umverpackung")}</div><figcaption>Umverpackung Variante {v}, {bw:.0f} × {bh:.0f} mm. Links oben: Hänger mit Doppelung und Verriegelungszunge. Im oberen Deckel der Schlitz für die Zunge.</figcaption></figure>
-<figure><div class="paper">{svg_inline(v, "Einleger")}</div><figcaption>Einleger Variante {v}, {iw:.0f} × {ih:.0f} mm. Dateien: <code>out/variante_{v}/</code></figcaption></figure></div>''',
+<figure><div class="paper">{svg_inline(v, "Umverpackung")}</div><figcaption>Umverpackung, {bw:.0f} × {bh:.0f} mm, 12×12″-Matte. Links oben: Hänger mit Doppelung, die Doppelung wird innen (zur Front hin) verklebt.</figcaption></figure>
+<figure><div class="paper">{svg_inline(v, "Einleger")}</div><figcaption>Einleger, {iw:.0f} × {ih:.0f} mm, 12×24″-Matte. Von links: Deck mit Seitenflanschen, Wand unten, Ringboden mit 4 Füßen, Stufe, Schnurboden mit Kreuzschlitz, Stufe, Manschettenboden, Klebelasche. Oben: Wand oben.</figcaption></figure></div>''',
     )
 
 
@@ -145,7 +127,7 @@ def main():
     ms = {v: json.load(open(os.path.join(vdir(v), "masse.json"))) for v in VARIANTS}
     blocks = {v: variant_blocks(v, ms[v]) for v in VARIANTS}
     glbs = {v: base64.b64encode(open(os.path.join(vdir(v), "Tuerzwerg_Verpackung.glb"), "rb").read()).decode() for v in VARIANTS}
-    pr = ms["A"]["params"]
+    pr = ms["C"]["params"]
     html = TEMPLATE
     for key in ("dl", "sect", "how", "steps", "blanks"):
         html = html.replace(f"%%{key.upper()}%%", "".join(blocks[v][key] for v in VARIANTS))
@@ -161,7 +143,7 @@ TEMPLATE = r"""<title>Türzwerg Verpackung</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: technisches Datenblatt – Variantenschalter, große 3D-Bühne links, Maße/Bedienung rechts, darunter Schnitt, Erklärung, Ablauf, Zuschnitte */
+/* Layout: technisches Datenblatt – große 3D-Bühne links, Maße/Bedienung rechts, darunter Schnitt, Erklärung, Ablauf, Zuschnitte */
 :root{
   --bg:#eef0ea; --panel:#ffffff; --fg:#1d2420; --muted:#5d6760; --line:#d3d8cf;
   --kraft:#b58a52; --neon:#c6ec00; --part:#a9c400; --cordc:#9c2a20; --cut:#d40000; --score:#0050ff;
@@ -187,9 +169,6 @@ h1 .tag{display:inline-block;background:var(--neon);color:#1d2420;padding:0 .25e
 header p{margin:0;color:var(--muted);max-width:64ch}
 h2{font-family:var(--f-display);font-weight:700;font-size:26px;margin:0 0 10px;text-wrap:balance}
 h3{font-family:var(--f-display);font-weight:500;font-size:19px;margin:0 0 6px;letter-spacing:.02em}
-.vswitch{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--fg)}
-.vswitch button{border:0;padding:10px 8px;font-size:14px;text-align:left;display:flex;flex-direction:column;gap:2px}
-.vswitch button small{font-weight:400;font-size:12px;opacity:.8}
 .grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px}
 @media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
 .stage{position:relative;background:var(--stage);border:1px solid var(--line);aspect-ratio:4/3.4;max-width:100%;min-height:340px}
@@ -216,6 +195,7 @@ dd{margin:0;text-align:right;font-family:var(--f-mono);font-size:13px;font-varia
 .sect .deck{stroke-dasharray:5 3}
 .sect .part{fill:var(--part);stroke:none;opacity:.9}
 .sect .hollow{fill:var(--panel)}
+.sect .axis{fill:none;stroke:var(--muted);stroke-width:.8;stroke-dasharray:2 3}
 .sect .cord{fill:none;stroke:var(--cordc);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
 .sect .lab{fill:var(--fg);font:600 8px var(--f-body)}
 .sect .small{fill:var(--muted);font-weight:400}
@@ -245,13 +225,8 @@ th{font-weight:600;color:var(--muted)}
 <div class="wrap">
 <header>
   <h1>Türzwerg <span class="tag">Verpackung</span></h1>
-  <p>Faltschachtel 90 × 140 × 25 mm mit klappbarem Euroloch-Hänger. Zwei Varianten für den Einleger: Bei A liegen Ring und Manschette vorn bündig, bei B liegen beide auf demselben Boden.</p>
+  <p>Faltschachtel 90 × 140 × 25 mm mit Euroloch-Hänger, der zum Versand nach vorn auf den Deckel klappt. Im Einleger liegen Ringmitte und Manschettenachse auf gleicher Höhe, die Schnur läuft gerade und verschwindet mittig in einem Schnurfach.</p>
 </header>
-
-<div class="vswitch" role="group" aria-label="Variante">
-  <button id="var-A" aria-pressed="false">A · Gleiche Front<small>Ring und Manschette 0,55 mm hinter dem Fenster</small></button>
-  <button id="var-B" aria-pressed="true">B · Gleicher Boden<small>Ring 9,5 mm tiefer, einfacheres Rohr</small></button>
-</div>
 
 <section class="grid" aria-label="3D-Entwurf">
   <div class="stage">
@@ -269,7 +244,7 @@ th{font-weight:600;color:var(--muted)}
       <label for="slide"><span>Einleger einschieben <b id="slideVal" class="mono">0 mm</b></span>
         <input id="slide" type="range" min="0" max="160" value="0" step="1"></label>
       <label for="hang"><span>Hänger klappen <b id="hangVal" class="mono">aufgestellt</b></span>
-        <input id="hang" type="range" min="0" max="180" value="0" step="5"></label>
+        <input id="hang" type="range" min="0" max="90" value="0" step="5"></label>
       <label for="alpha"><span>Karton-Deckkraft <b id="alphaVal" class="mono">100 %</b></span>
         <input id="alpha" type="range" min="0" max="100" value="100" step="5"></label>
       <label class="chk" for="cut"><input id="cut" type="checkbox"> Schnitt durch die Mitte</label>
@@ -292,8 +267,9 @@ th{font-weight:600;color:var(--muted)}
   %%HOW%%
   <div class="note" style="margin-top:20px">
     <h3>Hänger und Versand</h3>
-    <p>Der Hänger klappt nach hinten, flach auf die Rückwand, nicht über den Deckel. Seine Höhe spielt deshalb keine Rolle: Umgeklappt trägt er 0,9 mm zur Dicke bei und nichts zur Höhe. Im Umkarton stehen die Schachteln als glatte Quader von 90 × 140 × 26 mm ohne Luft dazwischen. 100 Stück: 2 Lagen à 5 × 10, Umkarton innen ca. 450 × 260 × 280 mm (33 l). Mit 30 mm Tiefe und starrem 35-mm-Hänger wären es ca. 450 × 310 × 350 mm (49 l).</p>
-    <p>Trotzdem ist der Hänger jetzt nur noch 28 statt 35 mm hoch. Das reicht für das Euroloch mit 6 mm Steg darüber und spart Material.</p>
+    <p>Der Hänger klappt 90° nach vorn und liegt dann flach auf dem Deckel. Der Falz wird nur um 90° gebogen statt um 180°. Damit das geht, ist der Hänger 24 mm hoch, also etwas flacher als der Karton tief (24,9 mm). Umgeklappt steht nichts über.</p>
+    <p>Das Euroloch sitzt mit 5 mm Steg unter der Oberkante. Die Doppelung ist 1 mm kürzer, damit sie beim Umklappen nicht gegen den Deckel drückt. Eine Verriegelung braucht es nicht: Am Haken hängt die Schachtel mit klappbarem Hänger praktisch genauso schräg wie mit starrem, weil ihr Schwerpunkt in beiden Fällen etwa 12 mm vor der Rückwand liegt.</p>
+    <p>Im Umkarton sind die Schachteln dann glatte Quader von 90 × 141 × 25 mm. 100 Stück: 2 Lagen à 5 × 10, Umkarton innen ca. 450 × 250 × 285 mm (32 l).</p>
   </div>
 </section>
 
@@ -339,17 +315,9 @@ th{font-weight:600;color:var(--muted)}
 <script>
 (function(){
   const GLBS = %%GLBS%%;
-  let variant = 'B';
+  let variant = 'C';
   const canvas = document.getElementById('c');
   const hint = document.getElementById('hint');
-
-  function showVariant(v){
-    variant = v;
-    document.querySelectorAll('[data-v]').forEach(el => { el.hidden = el.dataset.v !== v; });
-    ['A','B'].forEach(k => document.getElementById('var-'+k).setAttribute('aria-pressed', k === v));
-    if (window.loadModel) window.loadModel(v);
-  }
-  ['A','B'].forEach(k => document.getElementById('var-'+k).addEventListener('click', () => showVariant(k)));
 
   if (!window.THREE || !THREE.GLTFLoader) { hint.textContent = '3D-Bibliothek konnte nicht geladen werden.'; return; }
   const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
@@ -419,9 +387,9 @@ th{font-weight:600;color:var(--muted)}
     groupIns.position.y = -Number(slide.value);
     document.getElementById('slideVal').textContent = slide.value + ' mm';
     const deg = Number(hang.value);
-    hinge.rotation.x = -deg * Math.PI / 180;
+    hinge.rotation.x = deg * Math.PI / 180;
     if (tongue) tongue.visible = deg < 3;
-    document.getElementById('hangVal').textContent = deg === 0 ? 'aufgestellt' : (deg === 180 ? 'Versand (flach)' : deg + '°');
+    document.getElementById('hangVal').textContent = deg === 0 ? 'aufgestellt' : (deg === 90 ? 'Versand (auf dem Deckel)' : deg + '°');
     const a = Number(alpha.value)/100;
     document.getElementById('alphaVal').textContent = alpha.value + ' %';
     ['Umverpackung','Aufhaenger','Zunge'].forEach(k => (mats[k]||[]).forEach(m => { m.opacity = m.isLineBasicMaterial ? 0.55*Math.max(a,0.25) : a; m.depthWrite = a > 0.98; }));

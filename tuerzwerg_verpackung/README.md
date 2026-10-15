@@ -1,49 +1,42 @@
 # Türzwerg – Verpackung
 
-Faltschachtel (außen ca. 90 × 140 × 25 mm) mit klappbarem, doppellagigem Euroloch-Hänger
-über die volle Breite. Zwei Varianten für den Einleger:
+Faltschachtel (außen ca. 90 × 140 × 25 mm) mit Euroloch-Hänger über die volle Breite,
+der zum Versand 90° nach vorn auf den Deckel klappt, und einem Einleger, in dem
+Ringmitte und Manschettenachse auf gleicher Höhe liegen.
 
-| | A · Gleiche Front | B · Gleicher Boden |
-|---|---|---|
-| Ring → Front | 0,55 mm | 9,55 mm |
-| Manschette → Front | 0,55 mm | 0,55 mm |
-| Einleger | Streifen, 6 Querfalze, 115 × 310 mm (12×24″-Matte) | Rohr, 4 Längsfalze, 201 × 136 mm (A4) |
-| Ring | eingelegt, Fensterrand hält ihn | rastet im Deck ein (Haltezungen) |
-| Restschnur | Fach unter dem Ringboden | Fach unter dem Deck hinter dem Sichtfeld |
-
-Erzeugen: `python generate.py A`, `python generate.py B`, dann `python build_viewer.py`.
-Dateien je Variante in `out/variante_A/` bzw. `out/variante_B/`, der Viewer in `out/viewer.html`.
-
-## Dateien (`out/variante_X/`)
+## Dateien (`out/`)
 
 | Datei | Zweck |
 |---|---|
 | `Umverpackung_komplett.dxf`, `Einleger_komplett.dxf` | Plotdatei, Ebenen SCHNEIDEN (rot) + RILLEN (blau) |
 | `*_schneiden.dxf`, `*_rillen.dxf` | dieselben Linien getrennt (falls Studio die Farben verliert) |
 | `Umverpackung.svg`, `Einleger.svg` | für Silhouette Studio Designer Edition |
+| `viewer.html` | 3D-Ansicht, Längsschnitt, Zuschnitte, Bestücken |
 | `Tuerzwerg_Verpackung.step` / `.glb` | 3D-Gesamtmodell |
 | `masse.json` | alle berechneten Maße |
 
 Die Zuschnitte zeigen die Außenseite (Druckseite).
-Umverpackung: 241 × 245 mm → 12×12″-Matte.
+Umverpackung: 241 × 226 mm → 12×12″-Matte. Einleger: 116 × 322 mm → 12×24″-Matte.
 
-## Einleger Variante A
+## Einleger
 
-Ein Streifen, alle Falze quer: Wand oben · Deck (mit Seitenflanschen) · Wand unten · Ringboden ·
-Stufe · Manschettenboden · Klebelasche.
+Ein Streifen, alle Falze quer: Wand oben · Deck (mit Seitenflanschen) · Wand unten ·
+Ringboden (4 Füße) · Stufe · Schnurboden · Stufe · Manschettenboden · Klebelasche.
 
-- Manschette (23 mm) liegt auf dem Manschettenboden direkt an der Rückwand,
-  Ring (14 mm) auf dem 9 mm höheren Ringboden. Beide Vorderseiten liegen 0,55 mm hinter der Front.
-- Das Deck auf 14,2 mm hat Löcher mit 0,25 mm Luft: Die Teile werden nur hineingelegt.
-  Nach vorn halten sie die Fensterränder (Ringfenster Ø67, Manschettenfenster 29 mm lang).
-- Unter dem Ringboden liegt ein Schnurfach (88 × 91 × 8,6 mm) für die Restschnur (ca. 28 cm).
-  Die Schnur taucht mittig im 20-mm-Sichtfeld durch einen Kreuzschlitz ab und kommt dort wieder heraus.
+- Ringmitte und Manschettenachse liegen beide 11,95 mm über der Rückwand.
+  Die Schnurbohrungen liegen dadurch auf einer Linie, die Schnur läuft gerade.
+- Manschette auf dem Boden an der Rückwand, 0,55 mm hinter der Front.
+  Ring auf dem Ringboden (4,95 mm, auf Füßen), 5 mm hinter der Front.
+- Deck auf 14,7 mm: Der Ring rastet ein (Loch 0,35 mm kleiner, Haltezungen),
+  die Manschette wird eingelegt und von den Fensterrändern an den Stirnseiten gehalten.
+- Schnurboden im 20-mm-Sichtfeld knapp unter der Schnur, mit Kreuzschlitz.
+  Darunter das Schnurfach (88 × 16 × 8,5 mm, läuft flach unter dem Ringboden weiter).
 
 ## Hänger
 
-Volle Breite, 28 mm hoch, doppellagig, Falz an der Oberkante der Rückwand. Für den Versand flach nach
-hinten geklappt. Aufgestellt wird die Zunge der Doppelung in den Schlitz im oberen Deckel
-gesteckt; ihre Schultern rasten ein und halten den Hänger senkrecht.
+Volle Breite, 24 mm hoch (flacher als der Karton tief), doppellagig. Der Falz an der
+Oberkante der Rückwand wird für den Versand nur um 90° nach vorn gebogen, der Hänger
+liegt dann flach auf dem Deckel. Euroloch mit 5 mm Steg zur Oberkante.
 
 ## Anpassen
 
@@ -51,5 +44,7 @@ Alle Maße stehen oben in `generate.py` (`P = dict(...)`). Danach neu erzeugen:
 
 ```bash
 pip install cadquery shapely ezdxf trimesh
-python generate.py A && python generate.py B && python build_viewer.py
+python generate.py && python build_viewer.py
 ```
+
+Die früheren Varianten (A „gleiche Front“, B „gleicher Boden“) sind in der Git-Historie.

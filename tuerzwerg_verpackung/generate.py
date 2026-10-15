@@ -1,6 +1,6 @@
 """
-Türzwerg – Verpackung (Umverpackung + Einleger)
-================================================
+Türzwerg – Verpackung (Umverpackung + Einleger), Variante „Mitte auf Mitte“
+==========================================================================
 
 Erzeugt aus den STEP-Dateien von Ring und Manschette:
   * Plotdateien für den Silhouette Cameo 4 (DXF R12 + SVG, Ebenen SCHNEIDEN / RILLEN)
@@ -11,27 +11,20 @@ Alle Maße in mm. Koordinaten im Karton:
 
 Prinzip Einleger (Seitenansicht, ein Streifen, alle Falze quer):
 
-      Z ^           Deck (Löcher)                    Front des Kartons
-        |   Wb  ____________________________  Wt
-        |   |  |                            |  |
-        |   |__| Ringboden  ________   R    |  |
-        |        (Schnurfach darunter)  |___|__|  Manschettenboden
-        +---------------------------------------> Y
-          Ring liegt auf dem Ringboden, Manschette auf dem Manschettenboden.
-          Beide Böden sind so hoch, dass die Vorderseiten gleich weit (0,5 mm) hinter der Front liegen.
+      Z ^   Deck (Löcher, Schnurkanal)                       Front des Kartons
+        |  ______________________________________________
+        | |                 Schnurboden                  |
+        | |___ Ringboden ____|‾‾‾‾‾‾|                     |
+        |      Füße               |__ Manschettenboden __|
+        +---------------------------------------------------> Y
+   Ringmitte und Manschettenachse liegen auf derselben Höhe -> beide Schnurbohrungen
+   liegen auf einer Linie, die Schnur läuft gerade. Restschnur unter dem Schnurboden.
 
-Varianten:
-  A  "Gleiche Front":  zwei Böden, Ring und Manschette vorne bündig (0,55 mm hinter der Front)
-  B  "Gleicher Boden": beide Teile liegen auf demselben Boden, Ring sitzt 9 mm tiefer,
-     Einleger ist ein einfaches Rohr (Falze längs), Ring rastet im Deck ein
-
-Aufruf:  python generate.py A   |   python generate.py B
-         (benötigt: cadquery, shapely, ezdxf, trimesh)
+Aufruf:  python generate.py          (benötigt: cadquery, shapely, ezdxf, trimesh)
 """
 import json
 import math
 import os
-import sys
 
 import cadquery as cq
 import ezdxf
@@ -40,8 +33,7 @@ from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import unary_union
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-VARIANT = (sys.argv[1] if len(sys.argv) > 1 else "A").upper()
-OUT = os.path.join(HERE, "out", f"variante_{VARIANT}")
+OUT = os.path.join(HERE, "out")
 TEILE = os.path.join(HERE, "teile")
 
 # --------------------------------------------------------------------------
@@ -54,35 +46,32 @@ P = dict(
     tuck=15.0,         # Einstecklasche
     dust=18.0,         # Staublaschen
     glue=13.0,         # Klebelasche Faltschachtel
-    # Aufhänger: volle Breite, doppellagig, für den Transport nach hinten klappbar
-    hang_h=28.0,
-    lock_w=30.0,       # Verriegelungszunge (steckt im Deckelschlitz, hält den Hänger senkrecht)
-    lock_l=11.0,
-    lock_slit_z=8.5,   # Schlitz im Deckel, Abstand zur Rückwand
+    # Aufhänger: volle Breite, doppellagig, klappt 90° nach vorn auf den Deckel
+    hang_h=24.0,       # < Kartontiefe -> liegt umgeklappt ganz auf dem Deckel
     # Euroloch (DIN EN 13010 lt. Handelsangaben): 32 breit, 6 hoch, Mitte Ø10
-    euro_w=32.0, euro_h=6.0, euro_d=10.0, euro_from_top=13.0,
+    euro_w=32.0, euro_h=6.0, euro_d=10.0, euro_from_top=12.0,
     # Einleger
     ins_w=88.0,        # Breite (Karton innen 89)
-    ins_h=136.0,       # Länge (3 mm Luft oben für die Verriegelungszunge)
-    gap=0.55,          # Abstand Vorderseite Ring/Manschette -> Innenseite Front
-    deck_z=14.2,       # Deckhöhe: liegt bei beiden Teilen nahe der breitesten Stelle
-    split_y=91.0,      # Stufe zwischen Ringboden und Manschettenboden
+    ins_h=137.5,       # Länge (Karton innen 139)
+    gap=0.55,          # Manschette -> Innenseite Front
+    deck_z=14.7,       # Deck knapp über Ringmitte/Manschettenachse (11,95)
+    cord_floor_z=9.4,  # Schnurboden: knapp unter der Schnur
+    split_y1=79.0,     # Stufe Ringboden -> Schnurboden
+    split_y2=95.0,     # Stufe Schnurboden -> Manschettenboden
     ins_glue=10.0,
-    hole_clear=0.25,   # Luft rund um die Teile im Deck (Teile fallen hinein)
+    hole_clear=0.25,   # Luft um die Manschette (wird eingelegt)
+    ring_snap=0.35,    # Untermaß Ringloch (Ring rastet ein)
+    slit=3.0, slit_pitch=8.0,
+    leg_w=8.0,         # Füße unter dem Ringboden
     # Layout im Sichtfeld (Y = Höhe ab Innenboden)
-    ring_bottom=5.0,   # Unterkante Ring
-    cord_visible=20.0, # Schnur-Sichtfeld zwischen Ring und Manschette
-    cord_slot_y=84.0,  # Kreuzschlitz im Ringboden: hier taucht die Restschnur ab
-    cord_slot=12.0,    # Größe Kreuzschlitz
-    cord_chan=12.0,    # Breite Schnurkanal im Deck
-    # Fenster (etwas kleiner als die Teile -> sie können nicht nach vorn heraus)
-    win_ring_r=33.5,   # Ring Ø72 -> 2,5 mm Rand deckt die Rundung ab
-    win_cuff_x=14.5,   # Manschette 33 lang -> 2 mm Rand an den Stirnseiten
+    ring_bottom=5.0,
+    cord_visible=20.0,
+    cord_slot=10.0,    # Kreuzschlitz im Schnurboden
+    cord_chan=12.0,    # Schnurkanal im Deck
+    # Fenster
+    win_ring_r=36.5,   # Ring ganz sichtbar (er rastet im Deck ein)
+    win_cuff_x=14.5,   # Manschette 33 lang -> 2 mm Rand an den Stirnseiten hält sie
 )
-# Variante B: ein Boden, Deck tiefer, Ring rastet ein
-if VARIANT == "B":
-    P.update(deck_z=10.0, win_ring_r=37.0, ring_snap=0.35, slit=3.0, slit_pitch=8.0,
-             cord_chan=10.0, spacer_w=13.0)
 p = P
 t = p["t"]
 R_RING = 36.0          # Ring außen (aus STEP)
@@ -93,13 +82,15 @@ KEEL = 20.5            # Kiel unter Manschettenachse (aus STEP)
 
 Yr = p["ring_bottom"] + R_RING                     # Ringmitte
 Yc = Yr + R_RING + p["cord_visible"] + KEEL        # Manschettenachse
-Z_FRONT = p["Di"] - p["gap"]                       # Vorderseite beider Teile
-Z_CB = Z_FRONT - CUFF_D                            # Manschettenboden (Oberseite)
-Z_RB = Z_FRONT - RING_TH if VARIANT == "A" else Z_CB   # Ringboden (Oberseite)
-Z_RING = Z_RB + RING_TH / 2
-Z_CUFF = Z_CB + CUFF_D / 2
+Z_CB = t                                           # Manschette liegt auf dem Boden an der Rückwand
+Z_CUFF = Z_CB + CUFF_D / 2                         # Manschettenachse
+Z_RING = Z_CUFF                                    # Ringmitte = Manschettenmitte
+Z_RB = Z_RING - RING_TH / 2                        # Ringboden (Oberseite)
+Z_S = p["cord_floor_z"]                            # Schnurboden (Oberseite)
 ZD = p["deck_z"]
-assert abs(Z_CB - t) < 0.2, "Manschettenboden muss auf der Rückwand liegen -> Di = 23 + gap + t wählen"
+YS1, YS2 = p["split_y1"], p["split_y2"]
+Y_CORD = (Yr + R_RING + Yc - KEEL) / 2             # Mitte Schnur-Sichtfeld
+assert abs(p["Di"] - Z_CB - CUFF_D - p["gap"]) < 0.01
 
 
 # --------------------------------------------------------------------------
@@ -112,7 +103,6 @@ def load():
 
 
 def face_to_poly(shape, proj):
-    """Schnittfläche triangulieren -> shapely-Polygon (proj: Vector -> (u,v))."""
     tris = []
     for f in shape.Faces():
         verts, idx = f.tessellate(0.02, 0.2)
@@ -125,8 +115,7 @@ def face_to_poly(shape, proj):
 
 
 def silhouettes(ring, cuff):
-    """Größte Kontur in Blickrichtung (Ring: Äquator, Manschette: Achsebene).
-    Beide Teile sind hohl -> konvexe Hülle = gefüllte Außenkontur."""
+    """Größte Kontur in Blickrichtung. Beide Teile sind hohl -> konvexe Hülle."""
     pl = cq.Face.makePlane(200, 200, basePnt=cq.Vector(0, 0, 0), dir=cq.Vector(0, 0, 1))
     ring_sil = face_to_poly(ring.intersect(pl), lambda v: (v.x, v.y + Yr)).convex_hull
     pl = cq.Face.makePlane(200, 200, basePnt=cq.Vector(0, 0, 16.5), dir=cq.Vector(1, 0, 0))
@@ -156,6 +145,11 @@ def smooth(g, r):
     return g.buffer(r, resolution=16).buffer(-2 * r, resolution=16).buffer(r, resolution=16)
 
 
+def cross_slit(cx, cy, s):
+    h = s / 2
+    return [[(cx - h, cy - h), (cx + h, cy + h)], [(cx - h, cy + h), (cx + h, cy - h)]]
+
+
 def slits_along(poly, pitch, length, skip=None):
     """Radiale Schlitze nach außen entlang einer Lochkontur (Haltezungen)."""
     ring = poly.exterior
@@ -174,15 +168,15 @@ def slits_along(poly, pitch, length, skip=None):
     return out
 
 
-def spacer_tabs():
-    """Variante B: Abstandslaschen im Deck (x0, x1, y0); klappen 90° nach vorn bis an die Front."""
-    w = p["spacer_w"]
-    return [(22, 22 + w, 104), (-22 - w, -22, 104), (29, 29 + w, 0.8), (-29 - w, -29, 0.8)]
-
-
-def cross_slit(cx, cy, s):
-    h = s / 2
-    return [[(cx - h, cy - h), (cx + h, cy + h)], [(cx - h, cy + h), (cx + h, cy - h)]]
+def legs():
+    """Füße unter dem Ringboden (x0, x1, y_falz, y_ende) – liegen unter dem Ringrand, verdeckt."""
+    w, L = p["leg_w"], Z_RB - t
+    out = []
+    for sx in (-1, 1):
+        x0, x1 = sorted((sx * 17.0, sx * (17.0 + w)))
+        out.append((x0, x1, Yr + 21.0, Yr + 21.0 + L))
+        out.append((x0, x1, Yr - 21.0, Yr - 21.0 - L))
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -195,9 +189,8 @@ def box_blank(window):
     xS1 = xB1 + Dp                  # Seite A
     xF0, xF1 = xS1, xS1 + Wp        # Front
     xS2 = xF1 + Dp                  # Seite B
-    parts, scores, cuts = [], [], []
+    parts, scores = [], []
 
-    # Hauptpaneele + Klebelasche an der Rückwand
     parts.append(box(xB0, 0, xS2, Hp))
     for x in (xB1, xS1, xF1):
         scores.append([(x, 0), (x, Hp)])
@@ -218,57 +211,50 @@ def box_blank(window):
             parts.append(Polygon([(x, y0 + sgn * y) for x, y in pts]))
             scores.append([(xa + 0.5, y0), (xb - 0.5, y0)])
 
-    # Schlitz im oberen Deckel für die Verriegelungszunge
-    cxF = xF0 + Wp / 2
-    ys = Hp + Dp - p["lock_slit_z"]          # Deckel: y=Hp an der Front, y=Hp+Dp an der Rückwand
-    cuts.append([(cxF - p["lock_w"] / 2 - 0.5, ys), (cxF + p["lock_w"] / 2 + 0.5, ys)])
-
-    # Aufhänger: volle Breite, Falz an der Oberkante (klappbar), Doppelung + Verriegelungszunge
+    # Aufhänger: volle Breite, doppellagig, Falz an der Oberkante (klappt 90° nach vorn)
     cx = Wp / 2
-    hang = rounded_rect(xB0, Hp - 10, xB1, Hp + hh, 6).intersection(box(xB0, Hp, xB1, Hp + hh))
+    hang = rounded_rect(xB0, Hp - 10, xB1, Hp + hh, 5).intersection(box(xB0, Hp, xB1, Hp + hh))
     scores.append([(xB0 + 0.5, Hp), (xB1 - 0.5, Hp)])
-    yd0, yd1 = Hp + hh, Hp + 2 * hh - 0.6
-    dbl = rounded_rect(xB0 + 0.75, yd0, xB1 - 0.75, yd1 + 10, 6).intersection(box(xB0, yd0, xB1, yd1))
+    yd0, yd1 = Hp + hh, Hp + 2 * hh - 1.0      # 1 mm kürzer: Platz für den Falz beim Umklappen
+    dbl = rounded_rect(xB0 + 0.75, yd0, xB1 - 0.75, yd1 + 10, 5).intersection(box(xB0, yd0, xB1, yd1))
     scores.append([(xB0 + 0.75, yd0), (xB1 - 0.75, yd0)])
-    lw, ll = p["lock_w"], p["lock_l"]
-    neck = p["lock_slit_z"] - 0.5            # bis zur Schulter
-    tongue = Polygon([(cx - lw / 2, yd1), (cx - lw / 2, yd1 + neck), (cx - lw / 2 - 2, yd1 + neck + 0.8),
-                      (cx - lw / 2 + 2, yd1 + ll), (cx + lw / 2 - 2, yd1 + ll),
-                      (cx + lw / 2 + 2, yd1 + neck + 0.8), (cx + lw / 2, yd1 + neck), (cx + lw / 2, yd1)])
-    scores.append([(cx - lw / 2, yd1), (cx + lw / 2, yd1)])
-    parts += [hang, dbl, tongue]
+    parts += [hang, dbl]
+
     outline = unary_union([q.buffer(0.001) for q in parts]).buffer(-0.001)
     holes = [
         euro_hole(cx, Hp + hh - p["euro_from_top"]),
         euro_hole(cx, Hp + hh + p["euro_from_top"], flip=True),
         affinity.translate(window, xF0 + Wp / 2, 0),
     ]
-    return dict(outline=outline, holes=holes, cuts=cuts, scores=scores,
-                dims=dict(Wp=Wp, Dp=Dp, Hp=Hp, xF0=xF0))
+    return dict(outline=outline, holes=holes, cuts=[], scores=scores)
 
 
 # --------------------------------------------------------------------------
 # Zuschnitt Einleger (ein Streifen, Falze parallel zur Breite)
 # --------------------------------------------------------------------------
 def insert_layout():
-    """Paneele entlang des Streifens: (Name, Länge). Reihenfolge = Blank von unten nach oben."""
-    H, Ys = p["ins_h"], p["split_y"]
+    H = p["ins_h"]
     return [
         ("Klebelasche", p["ins_glue"]),
-        ("Manschettenboden", H - Ys),
-        ("Stufe", Z_RB - t),
-        ("Ringboden", Ys),
+        ("Manschettenboden", H - YS2),
+        ("Stufe hinten", Z_S - t),
+        ("Schnurboden", YS2 - YS1),
+        ("Stufe vorn", Z_S - Z_RB),
+        ("Ringboden", YS1),
         ("Wand unten", ZD - Z_RB),
         ("Deck", H),
         ("Wand oben", ZD - t),
     ]
 
 
-def insert_blank(deck_hole):
-    W, H, Ys = p["ins_w"], p["ins_h"], p["split_y"]
-    lay = insert_layout()
+def flange_heights():
+    return ZD - Z_RB - t, ZD - Z_S - t, ZD - Z_CB - t
+
+
+def insert_blank(deck_hole, slit_lines):
+    W, H = p["ins_w"], p["ins_h"]
     v, pos = 0.0, {}
-    for name, L in lay:
+    for name, L in insert_layout():
         pos[name] = (v, v + L)
         v += L
     u0, u1 = -W / 2, W / 2
@@ -281,49 +267,29 @@ def insert_blank(deck_hole):
     for name, (a, b) in list(pos.items())[1:]:
         scores.append([(u0, a), (u1, a)])
 
-    # Deck: v -> Y = v - vD0 ; Seitenflansche stützen das Deck auf den Böden ab
+    # Deck: Y = v - vD0 ; Seitenflansche stützen das Deck auf den drei Böden ab
     vD0, vD1 = pos["Deck"]
-    hr = ZD - Z_RB - t           # Flansch im Ringbereich
-    hc = ZD - Z_CB - t           # Flansch im Manschettenbereich
+    hR, hS, hC = flange_heights()
     for sgn in (-1, 1):
         e = sgn * W / 2
-        f = [(e, vD0 + 1), (e + sgn * hr, vD0 + 1 + hr * 0.6), (e + sgn * hr, vD0 + Ys + 0.5),
-             (e + sgn * hc, vD0 + Ys + 0.5 + (hc - hr)), (e + sgn * hc, vD1 - 1 - hc * 0.6), (e, vD1 - 1)]
-        parts.append(Polygon(f))
+        f = [(0, 1), (hR, 4), (hR, YS1 - 0.5 - (hR - hS)), (hS, YS1 - 0.5), (hS, YS2 + 0.5),
+             (hC, YS2 + 0.5 + (hC - hS)), (hC, H - 4), (0, H - 1)]
+        parts.append(Polygon([(e + sgn * h, vD0 + y) for h, y in f]))
         scores.append([(e, vD0 + 1), (e, vD1 - 1)])
     hole = affinity.translate(deck_hole, 0, vD0)
+    cuts += [[(a, b + vD0) for a, b in sl] for sl in slit_lines]
 
-    # Ringboden: Y = vR1 - v ; Kreuzschlitz für die Restschnur
+    # Ringboden: Y = vR1 - v ; Füße (Falz unten am Fuß, nicht gerillt an den Seiten)
     vR0, vR1 = pos["Ringboden"]
-    cuts += cross_slit(0, vR1 - p["cord_slot_y"], p["cord_slot"])
+    for x0, x1, yf, ye in legs():
+        cuts.append([(x0, vR1 - yf), (x0, vR1 - ye), (x1, vR1 - ye), (x1, vR1 - yf)])
+        scores.append([(x0, vR1 - yf), (x1, vR1 - yf)])
+    # Schnurboden: Y = YS1 + (vS1 - v) ; Kreuzschlitz für die Restschnur
+    vS0, vS1 = pos["Schnurboden"]
+    cuts += cross_slit(0, vS1 - (Y_CORD - YS1), p["cord_slot"])
 
     outline = unary_union([q.buffer(0.001) for q in parts]).buffer(-0.001)
-    return dict(outline=outline, holes=[hole], cuts=cuts, scores=scores, dims=dict(pos=pos))
-
-
-def cord_mid():
-    return (Yr + R_RING + Yc - KEEL) / 2
-
-
-def insert_blank_B(deck_hole, slit_lines):
-    """Rohr mit Falzen längs: Boden | Wand | Deck | Wand | Klebelasche. v = Y im Karton."""
-    W, H = p["ins_w"], p["ins_h"]
-    hw = ZD - t
-    x = [0.0]
-    for L in (W, hw, W, hw):
-        x.append(x[-1] + L)
-    gl = 6.0
-    outline = unary_union([box(0, 0, x[4], H), Polygon([(x[4], 0), (x[4] + gl, 4), (x[4] + gl, H - 4), (x[4], H)])])
-    scores = [[(xi, 0), (xi, H)] for xi in x[1:4]] + [[(x[4], 4), (x[4], H - 4)]]
-    ox = x[2] + W / 2            # Deck: X(Karton) = u - ox
-    cuts = []
-    L = p["Di"] - ZD - 0.3
-    for x0, x1, y0 in spacer_tabs():
-        cuts.append([(ox + x0, y0), (ox + x0, y0 + L), (ox + x1, y0 + L), (ox + x1, y0)])
-        scores.append([(ox + x0, y0), (ox + x1, y0)])
-    cuts += [[(a + ox, b) for a, b in sl] for sl in slit_lines]
-    cuts += cross_slit(ox, cord_mid(), p["cord_slot"])
-    return dict(outline=outline, holes=[affinity.translate(deck_hole, ox, 0)], cuts=cuts, scores=scores, dims={})
+    return dict(outline=outline, holes=[hole], cuts=cuts, scores=scores)
 
 
 # --------------------------------------------------------------------------
@@ -403,9 +369,13 @@ def blk(x0, x1, y0, y1, z0, z1):
 
 
 def extrude_yz(poly, x0, th):
-    """Polygon in (Y,Z) -> Platte senkrecht zu X."""
     pts = [(y, z) for y, z in list(poly.exterior.coords)[:-1]]
     return cq.Workplane("YZ").workplane(offset=x0).polyline(pts).close().extrude(th)
+
+
+def rod(a, b, r=2.0):
+    a, b = cq.Vector(*a), cq.Vector(*b)
+    return cq.Solid.makeCylinder(r, (b - a).Length, a, (b - a).normalized())
 
 
 def build_3d(ring, cuff, window, deck_hole):
@@ -416,86 +386,50 @@ def build_3d(ring, cuff, window, deck_hole):
     shell = (front.union(blk(X0, X1, -t, Hi + t, -t, 0))
              .union(blk(X0, -Wi / 2, -t, Hi + t, 0, Di)).union(blk(Wi / 2, X1, -t, Hi + t, 0, Di))
              .union(blk(-Wi / 2, Wi / 2, Hi, Hi + t, 0, Di)).union(blk(-Wi / 2, Wi / 2, -t, 0, 0, Di)))
-    # Aufhänger (aufgeklappt): Rückwandlage + Doppelung, Euroloch
-    hang = rounded_rect(X0, Hi - 10, X1, Hi + hh, 6).intersection(box(X0, Hi + t, X1, Hi + hh)).difference(
-        euro_hole(0, Hi + hh - p["euro_from_top"]))
-    dbl = box(X0 + 0.75, Hi + 0.6 + t, X1 - 0.75, Hi + hh).difference(euro_hole(0, Hi + hh - p["euro_from_top"]))
+    # Aufhänger (aufgestellt): Rückwandlage + Doppelung, Euroloch
+    eh = euro_hole(0, Hi + hh - p["euro_from_top"])
+    hang = rounded_rect(X0, Hi - 10, X1, Hi + hh, 5).intersection(box(X0, Hi + t, X1, Hi + hh)).difference(eh)
+    dbl = rounded_rect(X0 + 0.75, Hi + 1.0 + t - 10, X1 - 0.75, Hi + hh, 5).intersection(
+        box(X0, Hi + 1.0 + t, X1, Hi + hh)).difference(eh)
     hanger = extrude_xy(hang, -t, t).union(extrude_xy(dbl, 0, t))
-    lw = p["lock_w"]
-    tongue = blk(-lw / 2, lw / 2, Hi + t, Hi + 2 * t, t, p["lock_slit_z"]).union(
-        blk(-lw / 2, lw / 2, Hi - 2.5, Hi + 2 * t, p["lock_slit_z"] - t, p["lock_slit_z"]))
 
-    if VARIANT == "B":
-        insert, cord = insert_cord_B(deck_hole)
-        return finish_3d(shell, hanger, tongue, insert, cord, ring, cuff)
     # Einleger
-    W, H, Ys = p["ins_w"], p["ins_h"], p["split_y"]
+    W, H = p["ins_w"], p["ins_h"]
     u0, u1 = -W / 2, W / 2
     deck = extrude_xy(box(u0, 0, u1, H).difference(deck_hole), ZD - t / 2, t)
-    floor_c = blk(u0, u1, Ys, H, 0, t)
-    step = blk(u0, u1, Ys - t, Ys, 0, Z_RB)
-    slot = box(-p["cord_slot"] / 2, p["cord_slot_y"] - p["cord_slot"] / 2, p["cord_slot"] / 2, p["cord_slot_y"] + p["cord_slot"] / 2)
-    floor_r = extrude_xy(box(u0, 0, u1, Ys).difference(slot.buffer(-4)), Z_RB - t, t)
-    wall_b = blk(u0, u1, 0, t, Z_RB, ZD)
-    wall_t = blk(u0, u1, H - t, H, 0, ZD)
-    insert = deck.union(floor_c).union(step).union(floor_r).union(wall_b).union(wall_t)
-    fl = Polygon([(1, Z_RB), (Ys, Z_RB), (Ys, t), (H - 1, t), (H - 1, ZD), (1, ZD)])
+    leg_holes = unary_union([box(x0, min(yf, ye), x1, max(yf, ye)) for x0, x1, yf, ye in legs()])
+    floor_r = extrude_xy(box(u0, 0, u1, YS1).difference(leg_holes), Z_RB - t, t)
+    floor_s = extrude_xy(box(u0, YS1, u1, YS2).difference(Point(0, Y_CORD).buffer(2.5)), Z_S - t, t)
+    floor_c = blk(u0, u1, YS2, H, 0, t)
+    insert = (deck.union(floor_r).union(floor_s).union(floor_c)
+              .union(blk(u0, u1, YS1 - t, YS1, Z_RB - t, Z_S))       # Stufe vorn
+              .union(blk(u0, u1, YS2, YS2 + t, 0, Z_S))              # Stufe hinten
+              .union(blk(u0, u1, 0, t, Z_RB, ZD))                    # Wand unten
+              .union(blk(u0, u1, H - t, H, 0, ZD)))                  # Wand oben
+    for x0, x1, yf, ye in legs():
+        insert = insert.union(blk(x0, x1, yf - t / 2, yf + t / 2, 0, Z_RB - t))
+    hR, hS, hC = flange_heights()
+    fl = Polygon([(1, ZD - hR), (YS1 - 0.5, ZD - hR), (YS1 - 0.5, ZD - hS), (YS2 + 0.5, ZD - hS),
+                  (YS2 + 0.5, ZD - hC), (H - 1, ZD - hC), (H - 1, ZD), (1, ZD)])
     for x0 in (u0, u1 - t):
         insert = insert.union(extrude_yz(fl, x0, t))
 
-    # Schnur: sichtbar Manschette -> Kreuzschlitz -> Ring, Rest als Bündel im Schnurfach
-    ys = p["cord_slot_y"]
-    pts_top = [(0, Yc - KEEL + 2, Z_CUFF), (0, ys + 1.5, Z_RB + 2.2), (0, ys, Z_RB - 2.5)]
-    pts_bot = [(0, ys, Z_RB - 2.5), (0, ys - 1.5, Z_RB + 2.2), (0, Yr + R_RING - 2, Z_RING)]
-    segs = [rod(pts_top[i], pts_top[i + 1]) for i in range(2)] + [rod(pts_bot[i], pts_bot[i + 1]) for i in range(2)]
-    zc = (Z_RB - t) / 2 + t
-    coil = [cq.Solid.makeTorus(18.0 - 4 * k, 2.0, cq.Vector(0, Yr + 4, zc), cq.Vector(0, 0, 1)) for k in range(3)]
-    segs += [rod((1.6, ys, Z_RB - 2.5), (14, Yr + 16, zc)), rod((-1.6, ys, Z_RB - 2.5), (-14, Yr + 16, zc))]
-    cord = cq.Workplane().add(segs[0])
-    for s in segs[1:] + coil:
-        cord = cord.union(cq.Workplane().add(s))
-    return finish_3d(shell, hanger, tongue, insert, cord, ring, cuff)
-
-
-def rod(a, b, r=2.0):
-    a, b = cq.Vector(*a), cq.Vector(*b)
-    return cq.Solid.makeCylinder(r, (b - a).Length, a, (b - a).normalized())
-
-
-def insert_cord_B(deck_hole):
-    W, H = p["ins_w"], p["ins_h"]
-    u0, u1 = -W / 2, W / 2
-    L = p["Di"] - ZD - 0.3
-    tabs = spacer_tabs()
-    deck_poly = box(u0, 0, u1, H).difference(deck_hole).difference(Point(0, cord_mid()).buffer(2.5))
-    for x0, x1, y0 in tabs:
-        deck_poly = deck_poly.difference(box(x0, y0, x1, y0 + L))
-    insert = extrude_xy(deck_poly, ZD - t / 2, t).union(blk(u0, u1, 0, H, 0, t))
-    insert = insert.union(blk(u0, u0 + t, 0, H, 0, ZD)).union(blk(u1 - t, u1, 0, H, 0, ZD))
-    for x0, x1, y0 in tabs:
-        insert = insert.union(blk(x0, x1, y0, y0 + t, ZD, ZD + L))
-    # Schnur: Manschette -> Kanal -> unter das Deck; Rest als flache Schlaufen hinter dem Sichtfeld
-    ym = cord_mid()
-    zs = ZD + t / 2 + 2.0          # Schnur liegt auf dem Deck
-    pts = [(0, Yc - KEEL + 2, Z_CUFF), (0, Yc - KEEL - 1, zs), (0, ym + 1.5, zs), (0, ym, ZD - 3)]
-    pts2 = [(0, ym, ZD - 3), (0, ym - 1.5, zs), (0, Yr + R_RING + 0.5, zs), (0, Yr + R_RING - 2.5, Z_RING)]
-    segs = [rod(pts[i], pts[i + 1]) for i in range(3)] + [rod(pts2[i], pts2[i + 1]) for i in range(3)]
-    for dy, z in ((3, 3.0), (-3, 3.0), (3, 7.0), (-3, 7.0)):
-        segs.append(rod((-36, ym + dy, z), (36, ym + dy, z)))
-    segs += [rod((0, ym, ZD - 3), (8, ym + 3, 7.0)), rod((0, ym, ZD - 3), (-8, ym - 3, 7.0))]
+    # Schnur: gerade auf Höhe der Bohrungen, mittig Kreuzschlitz, Rest als Schlaufen im Schnurfach
+    zc, ym = Z_CUFF, Y_CORD
+    segs = [rod((0, Yc - KEEL + 2, zc), (0, ym + 1.8, zc)), rod((0, ym + 1.8, zc), (0, ym, Z_S - 2.5)),
+            rod((0, ym, Z_S - 2.5), (0, ym - 1.8, zc)), rod((0, ym - 1.8, zc), (0, Yr + R_RING - 2, zc))]
+    for dy, z in ((-4, 2.6), (4, 2.6), (-4, 6.4), (4, 6.4)):
+        segs.append(rod((-38, ym + dy, z), (38, ym + dy, z)))
+    segs += [rod((0, ym, Z_S - 2.5), (6, ym + 4, 6.4)), rod((0, ym, Z_S - 2.5), (-6, ym - 4, 6.4))]
     cord = cq.Workplane().add(segs[0])
     for sg in segs[1:]:
         cord = cord.union(cq.Workplane().add(sg))
-    return insert, cord
 
-
-def finish_3d(shell, hanger, tongue, insert, cord, ring, cuff):
     ring_s = cq.Workplane().add(ring).translate((0, Yr, Z_RING))
     cuff_s = cq.Workplane().add(cuff).rotate((0, 0, 0), (0, 1, 0), 90).translate((-CUFF_L / 2, Yc, Z_CUFF))
     parts = [
         ("Umverpackung", shell, (0.96, 0.95, 0.92)),
         ("Aufhaenger", hanger, (0.96, 0.95, 0.92)),
-        ("Zunge", tongue, (0.96, 0.95, 0.92)),
         ("Einleger", insert, (0.80, 0.66, 0.46)),
         ("Ring", ring_s, (0.84, 1.0, 0.12)),
         ("Manschette", cuff_s, (0.84, 1.0, 0.12)),
@@ -531,55 +465,41 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     ring, cuff = load()
     ring_sil, cuff_sil = silhouettes(ring, cuff)
-    c = p["hole_clear"]
 
-    slit_lines = []
-    if VARIANT == "B":   # Ring rastet ein: Loch etwas kleiner als der Ring, Zungen geben nach
-        ring_hole = ring_sil.buffer(-p["ring_snap"], resolution=32)
-    else:
-        ring_hole = ring_sil.buffer(c, resolution=32)
-    cuff_hole = cuff_sil.buffer(c, resolution=8)
+    ring_hole = ring_sil.buffer(-p["ring_snap"], resolution=32)     # Ring rastet ein
+    cuff_hole = cuff_sil.buffer(p["hole_clear"], resolution=8)      # Manschette wird eingelegt
     ch = p["cord_chan"] / 2
     channel = box(-ch, Yr + R_RING - 4, ch, Yc - KEEL + 2)
-    if VARIANT == "A":
-        deck_hole = smooth(unary_union([ring_hole, cuff_hole, channel]), 0.8)
-    else:   # B: kein offener Kanal (sonst sähe man das Schnurbündel) -> Kreuzschlitz im Deck
-        deck_hole = unary_union([smooth(ring_hole, 0.8), smooth(cuff_hole, 0.8)])
-    if VARIANT == "B":
-        L = p["Di"] - ZD - 0.3
-        tab_zone = unary_union([box(x0, y0, x1, y0 + L) for x0, x1, y0 in spacer_tabs()]).buffer(p["slit"] + 2.5)
+    deck_hole = smooth(unary_union([ring_hole, cuff_hole, channel]), 0.8)
 
-        def skip(x, y):  # Zungen nur am Ring, nicht im Schnurkanal / an der Manschette / an den Laschen
-            return (y > Yr + R_RING - 8 and abs(x) < ch + 6) or y > Yr + R_RING + 2 or tab_zone.contains(Point(x, y))
-        slit_lines = slits_along(smooth(ring_hole, 0.8), p["slit_pitch"], p["slit"], skip)
+    def skip(x, y):  # Zungen nur am Ring, nicht am Schnurkanal
+        return y > Yr + R_RING - 9 and abs(x) < ch + 7 or y > Yr + R_RING + 1
+    slit_lines = slits_along(smooth(ring_hole, 0.8), p["slit_pitch"], p["slit"], skip)
 
     wx = p["win_cuff_x"]
-    window = unary_union([
+    window = smooth(unary_union([
         Point(0, Yr).buffer(p["win_ring_r"], resolution=64),
         rounded_rect(-wx, Yc - KEEL - 1.5, wx, Yc + CUFF_D / 2 + 1.5, 3),
-        box(-5, Yr + R_RING - 6, 5, Yc - KEEL + 3),
-    ])
-    window = smooth(window, 3)
+        box(-6, Yr + R_RING - 6, 6, Yc - KEEL + 3),
+    ]), 3)
 
-    bb = box_blank(window)
-    ib = insert_blank_B(deck_hole, slit_lines) if VARIANT == "B" else insert_blank(deck_hole)
-    sizes = {"Umverpackung": write_files("Umverpackung", *blank_paths(bb)),
-             "Einleger": write_files("Einleger", *blank_paths(ib))}
+    sizes = {"Umverpackung": write_files("Umverpackung", *blank_paths(box_blank(window))),
+             "Einleger": write_files("Einleger", *blank_paths(insert_blank(deck_hole, slit_lines)))}
     build_3d(ring, cuff, window, deck_hole)
 
-    info = dict(variant=VARIANT, params=P, Yr=Yr, Yc=Yc, deck_Z=ZD, ring_floor_Z=round(Z_RB, 2), cuff_floor_Z=round(Z_CB, 2),
-                front_Z=round(Z_FRONT, 2), ring_front_gap=round(p["Di"] - Z_RB - RING_TH, 2), cuff_front_gap=p["gap"],
-                n_slits=len(slit_lines),
+    info = dict(params=P, Yr=Yr, Yc=Yc, Y_cord=Y_CORD, deck_Z=ZD,
+                ring_floor_Z=round(Z_RB, 2), cord_floor_Z=Z_S, cuff_floor_Z=round(Z_CB, 2),
+                ring_center_Z=round(Z_RING, 2), cuff_axis_Z=round(Z_CUFF, 2),
+                ring_front_gap=round(p["Di"] - Z_RB - RING_TH, 2), cuff_front_gap=p["gap"],
                 outer_mm=[round(p["Wi"] + 2 * t, 1), round(p["Hi"] + 2 * t, 1), round(p["Di"] + 2 * t, 1)],
-                ring_hole_bounds=[round(v, 2) for v in ring_hole.bounds],
-                cuff_hole_bounds=[round(v, 2) for v in cuff_hole.bounds],
                 window_bounds=[round(v, 2) for v in window.bounds],
-                cord_store_mm=([p["ins_w"], p["split_y"], round(Z_RB - 2 * t, 2)] if VARIANT == "A"
-                               else [p["ins_w"], round(Yc - KEEL - Yr - R_RING, 1), round(ZD - 2 * t, 2)]),
+                insert_panels={k: round(L, 2) for k, L in insert_layout()},
+                cord_store_mm=[p["ins_w"], YS2 - YS1, round(Z_S - 2 * t, 2)],
+                n_slits=len(slit_lines),
                 blank_sizes_mm={k: [round(v - 16, 1) for v in s] for k, s in sizes.items()})
     with open(os.path.join(OUT, "masse.json"), "w") as f:
         json.dump(info, f, indent=2, ensure_ascii=False)
-    print(json.dumps(info, indent=2, ensure_ascii=False))
+    print(json.dumps({k: v for k, v in info.items() if k != "params"}, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
