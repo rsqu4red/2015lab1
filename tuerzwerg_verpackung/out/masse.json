@@ -1,96 +1,129 @@
 {
   "params": {
     "t": 0.45,
-    "Wi": 96.1,
-    "Hi": 145.1,
-    "Di": 23.6,
+    "Wi": 83.0,
+    "Hi": 134.0,
+    "Di": 23.2,
     "tuck": 15.0,
     "dust": 18.0,
-    "glue": 13.0,
-    "hang_h": 24.0,
+    "glue": 12.0,
+    "hang_h": 23.0,
     "euro_w": 32.0,
     "euro_h": 6.0,
     "euro_d": 10.0,
     "euro_from_top": 12.0,
-    "ins_w": 95.1,
-    "ins_h": 143.6,
-    "gap": 0.15,
-    "deck_z": 14.7,
-    "cord_floor_z": 9.4,
-    "ins_glue": 10.0,
-    "ring_snap": 0.35,
-    "slit": 3.0,
-    "slit_pitch": 8.0,
-    "leg_w": 8.0,
-    "cord_visible": 20.0,
-    "cord_slot": 10.0,
-    "cord_chan": 12.0,
-    "win_ring_r": 36.5,
-    "win_corner": 1.0
+    "margin": 6.0,
+    "cord_field": 18.0,
+    "ins_clear": 0.5,
+    "ins_gap_top": 1.0,
+    "cuff_clear": 0.3,
+    "tab_r": 23.6,
+    "tab_w": 9.0,
+    "tab_l": 6.0,
+    "slit": 10.0,
+    "label_inset": 0.5,
+    "win_card": 0.4,
+    "bleed": 2.0
   },
-  "Yr": 46.8,
-  "Yc": 123.3,
-  "Y_cord": 92.8,
-  "deck_Z": 14.7,
-  "split_y1": 84.8,
-  "split_y2": 100.8,
-  "ring_bottom": 10.799999999999997,
-  "margin_top_bottom": 10.3,
-  "cuff_window_mm": [
-    33.0,
-    32.0
+  "Yr": 42.0,
+  "Yc": 116.5,
+  "Y_cord": 89.75,
+  "Y_slit": 80.5,
+  "Z_deck": 9.0,
+  "Z_ring": 16.0,
+  "Z_cuff": 11.5,
+  "label_mm": [
+    82.45,
+    133.45
   ],
-  "ring_floor_Z": 4.95,
-  "cord_floor_Z": 9.4,
-  "cuff_floor_Z": 0.45,
-  "ring_center_Z": 11.95,
-  "cuff_axis_Z": 11.95,
-  "ring_front_gap": 4.65,
-  "cuff_front_gap": 0.15,
   "outer_mm": [
-    97.0,
-    146.0,
-    24.5
+    83.9,
+    134.9,
+    24.1
   ],
-  "window_bounds": [
-    -36.5,
-    10.3,
-    36.5,
-    134.8
+  "insert_mm": [
+    82.5,
+    133.0,
+    9.0
   ],
-  "insert_panels": {
-    "Klebelasche": 10.0,
-    "Manschettenboden": 42.8,
-    "Stufe hinten": 8.95,
-    "Schnurboden": 16.0,
-    "Stufe vorn": 4.45,
-    "Ringboden": 84.8,
-    "Wand unten": 9.75,
-    "Deck": 143.6,
-    "Wand oben": 14.25
-  },
-  "cord_store_mm": [
-    95.1,
-    16.0,
-    8.5
-  ],
-  "n_slits": 37,
-  "blank_sizes_mm": {
-    "12x12/Umverpackung": [
-      254.2,
-      231.6
-    ],
-    "12x12/Einleger_2teilig": [
-      217.1,
-      175.0
-    ],
-    "12x24/Einleger_einteilig": [
-      112.0,
-      334.6
-    ],
-    "12x24/Bogen_Karton_und_Einleger": [
-      254.2,
-      578.2
-    ]
+  "concepts": {
+    "A": {
+      "name": "Kapsel",
+      "dir": "Konzept_A_Kapsel",
+      "windows": {
+        "Manschette": [
+          22.0,
+          9.0
+        ],
+        "Schnur": [
+          6.0,
+          14.0
+        ],
+        "Ring": [
+          40.4,
+          11.4
+        ]
+      },
+      "blank_box_mm": [
+        226.2,
+        218.1
+      ],
+      "blank_insert_mm": [
+        99.5,
+        150.0
+      ]
+    },
+    "B": {
+      "name": "Bullauge",
+      "dir": "Konzept_B_Bullauge",
+      "windows": {
+        "Manschette": [
+          14.0,
+          14.0
+        ],
+        "Schnur": [
+          6.0,
+          14.0
+        ],
+        "Ring": [
+          10.0,
+          10.0
+        ]
+      },
+      "blank_box_mm": [
+        226.2,
+        218.1
+      ],
+      "blank_insert_mm": [
+        99.5,
+        150.0
+      ]
+    },
+    "C": {
+      "name": "Mittelachse",
+      "dir": "Konzept_C_Mittelachse",
+      "windows": {
+        "Manschette": [
+          4.0,
+          18.0
+        ],
+        "Schnur": [
+          4.0,
+          14.0
+        ],
+        "Ring": [
+          4.0,
+          9.0
+        ]
+      },
+      "blank_box_mm": [
+        226.2,
+        218.1
+      ],
+      "blank_insert_mm": [
+        99.5,
+        150.0
+      ]
+    }
   }
 }
